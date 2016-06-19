@@ -13,18 +13,29 @@ namespace DB {
 	DataResultSet* MySQLDataQuery::select(QuerySearchParams *search_params) {
 		mysql_query(mp_data_src->getMySQLConn(), mp_base_query);
 		MYSQL_RES *res = mysql_store_result(mp_data_src->getMySQLConn());
-		printf("Res: %p\n", res);
 
 		MYSQL_ROW row;
 		int num_fields = mysql_num_fields(res);
 		while((row = mysql_fetch_row(res))) {
-			for(int i=0;i<num_fields;i++) {
-				printf("%s ", row[i] ? row[i] : "NULL"); 
-			}
-			printf("\n");
+			mysql_field_seek(res, 0);
+			create_object_from_row(res, row);
 		}
 		mysql_free_result(res);
 		return NULL;
+	}
+	void *MySQLDataQuery::create_object_from_row(MYSQL_RES *res, MYSQL_ROW row) {
+		void *obj = mp_class_desc->mpFactoryMethod(NULL);
+		for(int i=0;i<mp_class_desc->num_members;i++) {
+			MYSQL_FIELD *field = mysql_fetch_field(res);
+			if(mp_class_desc->variable_map[i].mpSetMethod != NULL) {
+				sGenericData data;
+				data.type = EDataType_String_ASCII;
+				data.sUnion.mString = row[i];
+				mp_class_desc->variable_map[i].mpSetMethod((DB::DataSourceLinkedClass*)obj, &data, field->name);
+			}
+		}
+		printf("Ret factory: %p\n", obj);
+		return obj;
 	}
 	DataRow* MySQLDataQuery::remove(int pk_id) {
 		return NULL;
@@ -56,7 +67,7 @@ namespace DB {
 ///// MySQL Data Source implementation
 	MySQLDataSource::MySQLDataSource() {
 		conn = mysql_init(NULL);
-		printf("SQP PTR: %p", conn);
+		printf("SQP PTR: %p\n", conn);
 	}
 	MySQLDataSource::~MySQLDataSource() {
 		mysql_close(conn);

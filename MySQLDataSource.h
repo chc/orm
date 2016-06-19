@@ -21,6 +21,7 @@ namespace DB {
 			DataResultSet* select(QuerySearchParams *search_params);
 			DataRow* remove(int pk_id);
 			DataResultSet* remove(QuerySearchParams *search_params);
+			void *create_object_from_row(MYSQL_RES *res, MYSQL_ROW row);
 		private:
 			void build_base_query();
 			char *mp_base_query;

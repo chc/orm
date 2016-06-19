@@ -5,7 +5,7 @@
 
 namespace DB {
 	class DataQuery;
-
+	class DataSourceLinkedClass;
 
 	class DataRow {
 		public:
@@ -50,6 +50,7 @@ namespace DB {
 	typedef struct {
 		const char *variable_name;
 		EDataType dataType;
+		void (*mpSetMethod)(DataSourceLinkedClass *obj, sGenericData *data, const char *variable_name);
 	} QueryVariableMemberMap;
 
 	typedef struct {
@@ -57,6 +58,7 @@ namespace DB {
 		const char *database; //can be null
 		int num_members;
 		QueryVariableMemberMap *variable_map;
+		void *(*mpFactoryMethod)(DataRow *record);
 		sGenericData *(*mpGetDataByNameFunc)(const char *variable_name);
 	} QueryableClassDesc;
 
@@ -76,7 +78,7 @@ namespace DB {
 	class DataSourceLinkedClass {
 		public:
 			DataSourceLinkedClass(DataRow *record) { mp_record = record; };
-			virtual ~DataSourceLinkedClass();
+			virtual ~DataSourceLinkedClass() { };
 			virtual void remove() = 0;
 			virtual void save() = 0;
 			virtual void repull() = 0;
