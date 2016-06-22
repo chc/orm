@@ -139,3 +139,19 @@ int 		CDataPackage::GetNumElements(int index, int slot) const {
 		return -1;
 	return bank->GetNumDataSets(slot);
 }
+
+sGenericData *getGenericFromString(const char *str, EDataType type) {
+	sGenericData *data = (sGenericData *)malloc(sizeof(sGenericData));
+	data->type = type;
+	switch(type) {
+		case EDataType_UInt32: {
+			data->sUnion.uInt32Data = atoi(str);
+			break;
+		}
+		case EDataType_String_ASCII: {
+			data->sUnion.mString = strdup(str);
+			break;
+		}
+	}
+	return data;
+}

@@ -76,6 +76,9 @@ struct sGenericDataArray {
 	} sUnion;
 };
 
+
+sGenericData *getGenericFromString(const char *str, EDataType type);
+
 class CDataPackage;
 class CDataBank {
 	public:

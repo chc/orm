@@ -8,14 +8,7 @@ class User : public DB::DataSourceLinkedClass {
 		~User() {
 
 		}
-		const char *getName();
-		const char *getPass();
-		void setPassword(const char *pass);
-		void setUser(const char *user);
-
 		//queryable class impl
-		const char *getTableName() { return "user"; };
-		const char *setDatabaseName() { return "test"; };
 		static DB::QueryableClassDesc *getDesc() {
 			return &User::classDesc;
 		}
@@ -37,12 +30,18 @@ class User : public DB::DataSourceLinkedClass {
 		}
 		static void dbsrc_SetUsername(DataSourceLinkedClass *obj, sGenericData *data, const char *variable_name) {
 			((User *)obj)->username = strdup(data->sUnion.mString);
-			printf("Set username: %s\n", ((User *)obj)->username);
+		}
+		static void dbsrc_SetPassword(DataSourceLinkedClass *obj, sGenericData *data, const char *variable_name) {
+			((User *)obj)->password = strdup(data->sUnion.mString);
+		}
+		static void dbsrc_SetID(DataSourceLinkedClass *obj, sGenericData *data, const char *variable_name) {
+			((User *)obj)->id = (data->sUnion.uInt32Data);
 		}
 		static void* userFactory(DB::DataRow *rec) {
 			return (void *)new User(rec);
 		}
-	private:
+
+	//private:
 		static DB::QueryableClassDesc classDesc;
 		static DB::QueryVariableMemberMap memberMap[];
 		const char *username;
@@ -50,9 +49,9 @@ class User : public DB::DataSourceLinkedClass {
 		int id;
 };
 DB::QueryVariableMemberMap User::memberMap[] = {
-	{"id", EDataType_UInt32, NULL},
+	{"id", EDataType_UInt32, User::dbsrc_SetID},
 	{"username", EDataType_String_ASCII, User::dbsrc_SetUsername},
-	{"password", EDataType_String_ASCII, NULL},
+	{"password", EDataType_String_ASCII, User::dbsrc_SetPassword},
 };
 DB::QueryableClassDesc User::classDesc = {"user", "test", 3, (DB::QueryVariableMemberMap *)&User::memberMap, User::userFactory};
 
@@ -61,8 +60,13 @@ int main() {
 	printf("%p!!!\n", db);
 	db->connect("root", "123321", "localhost", "test");
 	DB::DataQuery *query = db->makeSelectQuery(User::getDesc(), NULL);
-	query->select();
-	printf("Query ptr: %p\n", query);
+	DB::DataResultSet *res = query->select();
+	Core::Iterator<Core::Vector<void *>, void *> it = res->begin();
+	while(it != res->end()) {
+		User *user = (User *)*it;
+		printf("User: %d || %s || %s\n", user->id, user->username, user->password);
+		it++;
+	}
 	delete db;
 	return 0;
 }

@@ -2,6 +2,8 @@
 #define _DATASOURCE_H
 #include "DataBank.h"
 #include "Vector.h"
+#include "Iterator.h"
+
 
 namespace DB {
 	class DataQuery;
@@ -16,9 +18,15 @@ namespace DB {
 
 	class DataResultSet {
 		public:
-			DataResultSet();
+			DataResultSet() { };
+			void AddObject(void *obj) { m_object_list.add(obj); };
+			Core::Iterator<Core::Vector<void *>, void *> begin() {  return m_object_list.begin();};
+			Core::Iterator<Core::Vector<void *>, void *> end() { return m_object_list.end(); };
 			int row_count() const;
 			const DataRow *get_row(int index) const;
+		private:
+			Core::Vector<void *> m_object_list;
+
 	};
 
 
