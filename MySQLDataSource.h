@@ -11,6 +11,10 @@ namespace DB {
 			void disconnect();
 			DataQuery* makeSelectQuery(QueryableClassDesc *class_desc, QuerySearchParams *params);
 			MYSQL *getMySQLConn() { return conn; };
+			void removeObj(DB::DataSourceLinkedClass *obj);
+			void saveObj(DB::DataSourceLinkedClass *obj);
+			DB::DataRow *repullObj(DB::DataSourceLinkedClass *obj);
+
 		private:
 			MYSQL *conn;
 	};
@@ -23,8 +27,8 @@ namespace DB {
 			DataResultSet* remove(QuerySearchParams *search_params);
 			void *create_object_from_row(MYSQL_RES *res, MYSQL_ROW row);
 		private:
-			void build_base_query();
-			char *mp_base_query;
+			void build_base_select_query();
+			char *mp_base_select_query;
 			MySQLDataSource *mp_data_src;
 	};
 

@@ -6,6 +6,7 @@
 
 
 namespace DB {
+	class DataSource;
 	class DataQuery;
 	class DataSourceLinkedClass;
 
@@ -59,6 +60,7 @@ namespace DB {
 		const char *variable_name;
 		EDataType dataType;
 		void (*mpSetMethod)(DataSourceLinkedClass *obj, sGenericData *data, const char *variable_name);
+		sGenericData (*mpGetMethod)(DataSourceLinkedClass *obj, const char *variable_name);
 	} QueryVariableMemberMap;
 
 	typedef struct {
@@ -66,12 +68,13 @@ namespace DB {
 		const char *database; //can be null
 		int num_members;
 		QueryVariableMemberMap *variable_map;
-		void *(*mpFactoryMethod)(DataRow *record);
-		sGenericData *(*mpGetDataByNameFunc)(const char *variable_name);
+		void *(*mpFactoryMethod)(DataSource *src);
+		sGenericData (*mpGetDataByNameFunc)(const char *variable_name);
 	} QueryableClassDesc;
 
 	/////////////////////////////////////////////////
 	///// Data Query builder & executor interface
+	////	handles both single & batch queries
 	class DataQuery {
 		public:
 			DataQuery(QueryableClassDesc *class_desc);
@@ -83,17 +86,23 @@ namespace DB {
 			QueryableClassDesc *mp_class_desc;
 	};
 
+	//////////////////////////////////////////
+	////// Single instance of data
+	//////		all functions should work on a single instance, not a batch group
 	class DataSourceLinkedClass {
 		public:
 			DataSourceLinkedClass(DataRow *record) { mp_record = record; };
+			DataSourceLinkedClass(DataSource *mp_src) { mp_data_src = mp_src; };
 			virtual ~DataSourceLinkedClass() { };
-			virtual void remove() = 0;
-			virtual void save() = 0;
-			virtual void repull() = 0;
-			virtual void lock() = 0;
-			virtual void unlock() = 0;
+			virtual DB::QueryVariableMemberMap *getMemberMap(int &member_map) = 0;
+			void remove();
+			void save();
+			void repull();
+			void lock();
+			void unlock();
 		private:
 			DataRow *mp_record;
+			DataSource *mp_data_src;
 	};
 
 	////////////////////////////////////
@@ -104,6 +113,9 @@ namespace DB {
 			virtual ~DataSource();
 			virtual void connect(const char *username, const char *password, const char *server, const char *database) = 0;	
 			virtual void disconnect() = 0;
+			virtual void removeObj(DB::DataSourceLinkedClass *obj) = 0;
+			virtual void saveObj(DB::DataSourceLinkedClass *obj) = 0;
+			virtual DB::DataRow *repullObj(DB::DataSourceLinkedClass *obj) = 0;
 			virtual DataQuery* makeSelectQuery(QueryableClassDesc *class_desc, QuerySearchParams *params) = 0;
 	};
 }

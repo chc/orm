@@ -5,13 +5,13 @@ namespace DB {
 ////// MySQL Query implementation
 	MySQLDataQuery::MySQLDataQuery(MySQLDataSource *source, QueryableClassDesc *class_desc) : DataQuery(class_desc) {
 		mp_data_src = source;
-		build_base_query();
+		build_base_select_query();
 	}
 	DataRow* MySQLDataQuery::select(int pk_id) {
 		return NULL;
 	}
 	DataResultSet* MySQLDataQuery::select(QuerySearchParams *search_params) {
-		mysql_query(mp_data_src->getMySQLConn(), mp_base_query);
+		mysql_query(mp_data_src->getMySQLConn(), mp_base_select_query);
 		MYSQL_RES *res = mysql_store_result(mp_data_src->getMySQLConn());
 
 		DataResultSet *result_set = new DataResultSet;
@@ -25,7 +25,7 @@ namespace DB {
 		return result_set;
 	}
 	void *MySQLDataQuery::create_object_from_row(MYSQL_RES *res, MYSQL_ROW row) {
-		void *obj = mp_class_desc->mpFactoryMethod(NULL);
+		void *obj = mp_class_desc->mpFactoryMethod(mp_data_src);
 		for(int i=0;i<mp_class_desc->num_members;i++) {
 			MYSQL_FIELD *field = mysql_fetch_field(res);
 			if(mp_class_desc->variable_map[i].mpSetMethod != NULL) {
@@ -43,7 +43,7 @@ namespace DB {
 	DataResultSet* MySQLDataQuery::remove(QuerySearchParams *search_params) {
 		return NULL;
 	}
-	void MySQLDataQuery::build_base_query() {
+	void MySQLDataQuery::build_base_select_query() {
 		/*
 			TODO: make string class to build large queries
 		*/
@@ -60,7 +60,7 @@ namespace DB {
 		strcat(buff, tmp);
 
 
-		mp_base_query = strdup(buff);
+		mp_base_select_query = strdup(buff);
 	}
 
 ///////////////////////////////////////////
@@ -88,5 +88,18 @@ namespace DB {
 		DataQuery *ret = new MySQLDataQuery(this, class_desc);
 
 		return ret;
+	}
+	void MySQLDataSource::removeObj(DB::DataSourceLinkedClass *obj) {
+
+	}
+	void MySQLDataSource::saveObj(DB::DataSourceLinkedClass *obj) {
+		int membermap_count;
+		DB::QueryVariableMemberMap *memberMap = obj->getMemberMap(membermap_count);
+		for(int i=0;i<membermap_count;i++) {
+			printf("Save: %s\n", memberMap[i].variable_name);
+		}
+	}
+	DB::DataRow *MySQLDataSource::repullObj(DB::DataSourceLinkedClass *obj) {
+
 	}
 }
