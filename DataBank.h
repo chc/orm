@@ -78,7 +78,8 @@ struct sGenericDataArray {
 
 
 sGenericData *getGenericFromString(const char *str, EDataType type);
-
+void getGenericAsString(sGenericData *data, char *out, int len);
+void getGenericAsString(sGenericData data, char *out, int len);
 class CDataPackage;
 class CDataBank {
 	public:

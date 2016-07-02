@@ -71,6 +71,8 @@ namespace DB {
 		void *(*mpFactoryMethod)(DataSource *src);
 		sGenericData (*mpGetDataByNameFunc)(const char *variable_name);
 	} QueryableClassDesc;
+	
+	DB::QueryVariableMemberMap *getMemberByName(const char *name, DB::QueryVariableMemberMap *memberMap, int num_instances);
 
 	/////////////////////////////////////////////////
 	///// Data Query builder & executor interface
@@ -95,6 +97,8 @@ namespace DB {
 			DataSourceLinkedClass(DataSource *mp_src) { mp_data_src = mp_src; };
 			virtual ~DataSourceLinkedClass() { };
 			virtual DB::QueryVariableMemberMap *getMemberMap(int &member_map) = 0;
+			virtual DB::QueryableClassDesc *getClassDesc() = 0;
+			virtual DB::QueryVariableMemberMap *getPrimaryKey() = 0;
 			void remove();
 			void save();
 			void repull();

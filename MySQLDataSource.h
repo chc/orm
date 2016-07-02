@@ -14,7 +14,7 @@ namespace DB {
 			void removeObj(DB::DataSourceLinkedClass *obj);
 			void saveObj(DB::DataSourceLinkedClass *obj);
 			DB::DataRow *repullObj(DB::DataSourceLinkedClass *obj);
-
+		  	void getMySQLPrintFmt(DB::DataSourceLinkedClass *obj, DB::QueryVariableMemberMap *map, char *out, int size);
 		private:
 			MYSQL *conn;
 	};

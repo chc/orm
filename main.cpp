@@ -11,6 +11,13 @@ class User : public DB::DataSourceLinkedClass {
 		~User() {
 
 		}
+		DB::QueryVariableMemberMap *getPrimaryKey() {
+			DB::QueryVariableMemberMap *memberMap;
+			int num_members;
+			memberMap = this->getMemberMap(num_members);
+			DB::QueryVariableMemberMap *pk = getMemberByName("id", memberMap, num_members);
+			return pk;
+		}
 		//queryable class impl
 		static DB::QueryableClassDesc *getDesc() {
 			return &User::classDesc;
@@ -27,9 +34,12 @@ class User : public DB::DataSourceLinkedClass {
 		static void* userFactory(DB::DataSource *src) {
 			return (void *)new User(src);
 		}
-		virtual DB::QueryVariableMemberMap *getMemberMap(int &member_map) {
+		DB::QueryVariableMemberMap *getMemberMap(int &member_map) {
 			member_map = User::classDesc.num_members;
 			return (DB::QueryVariableMemberMap *)&User::memberMap;
+		}
+		DB::QueryableClassDesc *getClassDesc() {
+			return User::getDesc();
 		}
 		static sGenericData dbsrc_GetUsername(DataSourceLinkedClass *obj, const char *variable_name) {
 			sGenericData data;
@@ -56,6 +66,7 @@ class User : public DB::DataSourceLinkedClass {
 		const char *password;
 		int id;
 };
+
 DB::QueryVariableMemberMap User::memberMap[] = {
 	{"id", EDataType_UInt32, User::dbsrc_SetID, User::dbsrc_GetID},
 	{"username", EDataType_String_ASCII, User::dbsrc_SetUsername, User::dbsrc_GetUsername},

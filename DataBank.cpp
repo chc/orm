@@ -1,4 +1,5 @@
 #include "DataBank.h"
+#include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
 #include <memory.h>
@@ -139,7 +140,26 @@ int 		CDataPackage::GetNumElements(int index, int slot) const {
 		return -1;
 	return bank->GetNumDataSets(slot);
 }
-
+void getGenericAsString(sGenericData *data, char *out, int len) {
+	switch(data->type) {
+		case EDataType_UInt32:
+			snprintf(out, len, "%d", data->sUnion.uInt32Data);
+			break;
+		case EDataType_String_ASCII:
+			snprintf(out, len, "%s", data->sUnion.mString);
+			break;
+	}
+}
+void getGenericAsString(sGenericData data, char *out, int len) {
+	switch(data.type) {
+		case EDataType_UInt32:
+			snprintf(out, len, "%d", data.sUnion.uInt32Data);
+			break;
+		case EDataType_String_ASCII:
+			snprintf(out, len, "%s", data.sUnion.mString);
+			break;
+	}
+}
 sGenericData *getGenericFromString(const char *str, EDataType type) {
 	sGenericData *data = (sGenericData *)malloc(sizeof(sGenericData));
 	data->type = type;

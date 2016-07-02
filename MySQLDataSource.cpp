@@ -95,11 +95,42 @@ namespace DB {
 	void MySQLDataSource::saveObj(DB::DataSourceLinkedClass *obj) {
 		int membermap_count;
 		DB::QueryVariableMemberMap *memberMap = obj->getMemberMap(membermap_count);
+		DB::QueryVariableMemberMap *pk = obj->getPrimaryKey();
+		char query[1024];
+		char temp[512];
+		char temp_vardata[256];
+		sprintf(query, "UPDATE `%s` SET ", obj->getClassDesc()->tableName);
 		for(int i=0;i<membermap_count;i++) {
-			printf("Save: %s\n", memberMap[i].variable_name);
+			if(&memberMap[i] != pk) {
+				getMySQLPrintFmt(obj, &memberMap[i], (char *)&temp_vardata, sizeof(temp_vardata));
+				sprintf(temp, "`%s` = %s,", memberMap[i].variable_name, temp_vardata);
+				strcat(query, temp);
+			}
 		}
+		query[strlen(query)-1] = 0;
+		sGenericData pk_data = pk->mpGetMethod(obj, pk->variable_name);
+    	getMySQLPrintFmt(obj, pk, temp_vardata, sizeof(temp_vardata));
+		snprintf(temp, sizeof(temp), " where `%s` = %s\n", pk->variable_name, temp_vardata);
+		strcat(query, temp);
+		printf("Output query: %s\n", query);
 	}
 	DB::DataRow *MySQLDataSource::repullObj(DB::DataSourceLinkedClass *obj) {
 
+	}
+	void MySQLDataSource::getMySQLPrintFmt(DB::DataSourceLinkedClass *obj, DB::QueryVariableMemberMap *map, char *msg, int len) {
+		char vardata[256];
+		char identifier = 0;
+		switch(map->dataType) {
+			case EDataType_String_ASCII:
+			identifier = '\"';
+			break;
+		}
+		getGenericAsString((map->mpGetMethod(obj, map->variable_name)), (char *)&vardata, sizeof(vardata));	
+		if(identifier == 0) {
+			snprintf(msg, len, "%s",vardata);
+		} else {
+			snprintf(msg, len, "%c%s%c",identifier,vardata,identifier);
+		}
+		
 	}
 }
