@@ -33,6 +33,19 @@ namespace DB {
 		}
 	}
 	return NULL;
-}
+	}
+	QuerySearchParams::QuerySearchParams() {
+
+	}
+	QuerySearchParams::~QuerySearchParams() {
+
+	}
+	void QuerySearchParams::pushOperator(EQueryOperator op) {
+		m_query_operators.add(op);
+	}
+	void QuerySearchParams::pushData(sGenericData *data) {
+		m_query_data.add(data);
+	}
+
 
 }

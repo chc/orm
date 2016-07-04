@@ -36,11 +36,14 @@ namespace DB {
 	enum EQueryOperator {
 		EQueryOperator_Greater,
 		EQueryOperator_Less,
-		EQueryOperator_GreaterThan,
-		EQueryOperator_LessThan,
+		EQueryOperator_GreaterEqual,
+		EQueryOperator_LessEqual,
 		EQueryOperator_NotEqual,
 		EQueryOperator_Equal,
 		EQueryOperator_Like,
+		EQueryOperator_And,
+		EQueryOperator_Or,
+		EQueryOperator_Not,
 	};
 	class QuerySearchParams {
 		public:
@@ -48,6 +51,12 @@ namespace DB {
 			~QuerySearchParams();
 			void pushOperator(EQueryOperator op);
 			void pushData(sGenericData *data);
+
+			Core::Iterator<Core::Vector<sGenericData *>, sGenericData *> dataBegin() {  return m_query_data.begin();};
+			Core::Iterator<Core::Vector<sGenericData *>, sGenericData *> dataEnd() { return m_query_data.end(); };
+
+			Core::Iterator<Core::Vector<EQueryOperator>, EQueryOperator> opsBegin() {  return m_query_operators.begin();};
+			Core::Iterator<Core::Vector<EQueryOperator>, EQueryOperator> opsEnd() { return m_query_operators.end(); };
 		private:
 			Core::Vector<sGenericData *> m_query_data;
 			Core::Vector<EQueryOperator> m_query_operators;
@@ -74,6 +83,17 @@ namespace DB {
 	
 	DB::QueryVariableMemberMap *getMemberByName(const char *name, DB::QueryVariableMemberMap *memberMap, int num_instances);
 
+	enum EQuerySortMode {
+		EQuerySortMode_Default,
+		EQuerySortMode_Ascending,
+		EQuerySortMode_Descending,
+	};
+
+	typedef struct {
+		int offset;
+		int row_count;
+	} QueryLimit;
+
 	/////////////////////////////////////////////////
 	///// Data Query builder & executor interface
 	////	handles both single & batch queries
@@ -81,7 +101,7 @@ namespace DB {
 		public:
 			DataQuery(QueryableClassDesc *class_desc);
 			virtual DataRow* select(int pk_id) = 0;
-			virtual DataResultSet* select(QuerySearchParams *search_params = NULL) = 0;
+			virtual DataResultSet* select(QuerySearchParams *search_params = NULL, EQuerySortMode sort_mode = EQuerySortMode_Default, QueryLimit *limit = NULL) = 0;
 			virtual DataRow* remove(int pk_id) = 0;
 			virtual DataResultSet* remove(QuerySearchParams *search_params) = 0;
 		protected:

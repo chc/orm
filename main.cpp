@@ -75,11 +75,21 @@ DB::QueryVariableMemberMap User::memberMap[] = {
 DB::QueryableClassDesc User::classDesc = {"user", "test", 3, (DB::QueryVariableMemberMap *)&User::memberMap, User::userFactory};
 
 int main() {
+	DB::QuerySearchParams *where = new DB::QuerySearchParams();
+	sGenericData *d1 = (sGenericData *)malloc(sizeof(sGenericData)), *d2 = (sGenericData *)malloc(sizeof(sGenericData));
+	where->pushOperator(DB::EQueryOperator_Less);
+	//where->pushOperator(DB::EQueryOperator_And);
+	d1->type = EDataType_UInt32;
+	d2->type = EDataType_VariableName;
+	d1->sUnion.uInt32Data = 10;
+	d2->sUnion.mString = "id";
+	where->pushData(d2);
+	where->pushData(d1);
 	DB::MySQLDataSource *db = new DB::MySQLDataSource();
 	printf("%p!!!\n", db);
 	db->connect("root", "123321", "localhost", "test");
 	DB::DataQuery *query = db->makeSelectQuery(User::getDesc(), NULL);
-	DB::DataResultSet *res = query->select();
+	DB::DataResultSet *res = query->select(where);
 	Core::Iterator<Core::Vector<void *>, void *> it = res->begin();
 	while(it != res->end()) {
 		User *user = (User *)*it;
@@ -88,6 +98,8 @@ int main() {
 		user->save();
 		it++;
 	}
+
+	query->remove(where);
 	delete db;
 	return 0;
 }

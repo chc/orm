@@ -146,6 +146,7 @@ void getGenericAsString(sGenericData *data, char *out, int len) {
 			snprintf(out, len, "%d", data->sUnion.uInt32Data);
 			break;
 		case EDataType_String_ASCII:
+		case EDataType_VariableName:
 			snprintf(out, len, "%s", data->sUnion.mString);
 			break;
 	}
@@ -155,6 +156,7 @@ void getGenericAsString(sGenericData data, char *out, int len) {
 		case EDataType_UInt32:
 			snprintf(out, len, "%d", data.sUnion.uInt32Data);
 			break;
+		case EDataType_VariableName:
 		case EDataType_String_ASCII:
 			snprintf(out, len, "%s", data.sUnion.mString);
 			break;
@@ -168,6 +170,7 @@ sGenericData *getGenericFromString(const char *str, EDataType type) {
 			data->sUnion.uInt32Data = atoi(str);
 			break;
 		}
+		case EDataType_VariableName:
 		case EDataType_String_ASCII: {
 			data->sUnion.mString = strdup(str);
 			break;
