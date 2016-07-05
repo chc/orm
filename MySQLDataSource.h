@@ -15,8 +15,8 @@ namespace DB {
 			void removeObj(DB::DataSourceLinkedClass *obj);
 			void saveObj(DB::DataSourceLinkedClass *obj);
 			DB::DataRow *repullObj(DB::DataSourceLinkedClass *obj);
-		  	static void getMySQLPrintFmt(DB::DataSourceLinkedClass *obj, DB::QueryVariableMemberMap *map, char *out, int size);
- 		  	static void getMySQLPrintFmt(sGenericData *data, char *out, int size);
+		  static void getMySQLPrintFmt(DB::DataSourceLinkedClass *obj, DB::QueryVariableMemberMap *map, char *out, int size);
+ 		  static void getMySQLPrintFmt(sGenericData *data, char *out, int size);
 		private:
 			MYSQL *conn;
 	};
@@ -31,8 +31,8 @@ namespace DB {
 		private:
 			void build_base_select_query();
 			void create_where_statement(QuerySearchParams *search_params, char *out, int len);
- 		  	void build_limit_statement(QueryLimit limit, char *out, int len);
- 		  	void build_order_statement(EQuerySortMode sort, char *out, int len);
+ 		  void create_limit_statement(QueryLimit *limit, char *out, int len);
+ 		  void create_order_statement(EQuerySortMode sort, char *out, int len);
 			char *mp_base_select_query;
 			MySQLDataSource *mp_data_src;
 	};

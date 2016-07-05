@@ -13,12 +13,25 @@ namespace DB {
 	DataResultSet* MySQLDataQuery::select(QuerySearchParams *search_params, EQuerySortMode sort_mode, QueryLimit *limit) {
 		char query[MYSQL_QUERY_BUFF_SIZE];
 		char where[256];
+		char order[256];
+		char limit_stmt[256];
 		where[0] = 0;
+		order[0] = 0;
+		limit_stmt[0] = 0;
+		
 
 		create_where_statement(search_params, where, sizeof(where));
-
+		create_limit_statement(limit, (char *)&limit_stmt, sizeof(limit_stmt));
+		create_order_statement(sort_mode, (char *)&order, sizeof(order));
 		strcpy(query, mp_base_select_query);
 		strcat(query, where);
+  	
+		if(order[0] != 0)
+			strcat(query, order);
+	
+		if(limit_stmt[0] != 0) 
+			strcat(query, limit_stmt);
+
 
 		printf("Query: %s\n", query);
 
@@ -156,19 +169,19 @@ namespace DB {
 		}
 		snprintf(out, len, where);
 	}
-	void MySQLDataQuery::build_order_statement(EQuerySortMode sort, char *out, int len) {
+	void MySQLDataQuery::create_order_statement(EQuerySortMode sort, char *out, int len) {
 		switch(sort) {
 			case EQuerySortMode_Ascending:
-				strcat(out, "ORDER BY ASC");
+				strcat(out, " ORDER BY ASC");
 				break;
 			case EQuerySortMode_Descending:
-				strcat(out, "ORDER BY DESC");
+				strcat(out, " ORDER BY DESC");
 				break;
 
 		}
 	}
-	void MySQLDataQuery::build_limit_statement(QueryLimit limit, char *out, int len) {
-		snprintf(out, len, "LIMIT %d,%d",limit.offset, limit.row_count);
+	void MySQLDataQuery::create_limit_statement(QueryLimit *limit, char *out, int len) {
+		snprintf(out, len, " LIMIT %d,%d",limit->offset, limit->row_count);
 	}
 ///////////////////////////////////////////
 ///// MySQL Data Source implementation
