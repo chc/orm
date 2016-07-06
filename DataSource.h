@@ -80,14 +80,19 @@ namespace DB {
 		void *(*mpFactoryMethod)(DataSource *src);
 		sGenericData (*mpGetDataByNameFunc)(const char *variable_name);
 	} QueryableClassDesc;
-	
-	DB::QueryVariableMemberMap *getMemberByName(const char *name, DB::QueryVariableMemberMap *memberMap, int num_instances);
 
 	enum EQuerySortMode {
 		EQuerySortMode_Default,
 		EQuerySortMode_Ascending,
 		EQuerySortMode_Descending,
 	};
+
+	typedef struct {
+		EQuerySortMode sort;
+		QueryVariableMemberMap *column;
+	} QueryOrder;
+	
+	DB::QueryVariableMemberMap *getMemberByName(const char *name, DB::QueryVariableMemberMap *memberMap, int num_instances);
 
 	typedef struct {
 		int offset;
@@ -101,7 +106,7 @@ namespace DB {
 		public:
 			DataQuery(QueryableClassDesc *class_desc);
 			virtual DataRow* select(int pk_id) = 0;
-			virtual DataResultSet* select(QuerySearchParams *search_params = NULL, EQuerySortMode sort_mode = EQuerySortMode_Default, QueryLimit *limit = NULL) = 0;
+			virtual DataResultSet* select(QuerySearchParams *search_params = NULL, QueryOrder *order_mode = NULL, QueryLimit *limit = NULL) = 0;
 			virtual DataRow* remove(int pk_id) = 0;
 			virtual DataResultSet* remove(QuerySearchParams *search_params) = 0;
 		protected:

@@ -10,7 +10,7 @@ namespace DB {
 	DataRow* MySQLDataQuery::select(int pk_id) {
 		return NULL;
 	}
-	DataResultSet* MySQLDataQuery::select(QuerySearchParams *search_params, EQuerySortMode sort_mode, QueryLimit *limit) {
+	DataResultSet* MySQLDataQuery::select(QuerySearchParams *search_params, QueryOrder *query_order, QueryLimit *limit) {
 		char query[MYSQL_QUERY_BUFF_SIZE];
 		char where[256];
 		char order[256];
@@ -22,7 +22,7 @@ namespace DB {
 
 		create_where_statement(search_params, where, sizeof(where));
 		create_limit_statement(limit, (char *)&limit_stmt, sizeof(limit_stmt));
-		create_order_statement(sort_mode, (char *)&order, sizeof(order));
+		create_order_statement(query_order, (char *)&order, sizeof(order));
 		strcpy(query, mp_base_select_query);
 		strcat(query, where);
   	
@@ -169,13 +169,13 @@ namespace DB {
 		}
 		snprintf(out, len, where);
 	}
-	void MySQLDataQuery::create_order_statement(EQuerySortMode sort, char *out, int len) {
-		switch(sort) {
+	void MySQLDataQuery::create_order_statement(QueryOrder *query_order, char *out, int len) {
+		switch(query_order->sort) {
 			case EQuerySortMode_Ascending:
-				strcat(out, " ORDER BY ASC");
+				snprintf(out, len, " ORDER BY `%s` ASC",query_order->column->variable_name);
 				break;
 			case EQuerySortMode_Descending:
-				strcat(out, " ORDER BY DESC");
+				snprintf(out, len, " ORDER BY `%s` DESC",query_order->column->variable_name);
 				break;
 
 		}

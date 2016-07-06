@@ -90,9 +90,12 @@ int main() {
 	db->connect("root", "123321", "localhost", "test");
 	DB::DataQuery *query = db->makeSelectQuery(User::getDesc(), NULL);
 	DB::QueryLimit limit;
+	DB::QueryOrder order;
+	order.sort = DB::EQuerySortMode_Ascending;
+	order.column = (DB::QueryVariableMemberMap *)&User::memberMap[0];
 	limit.offset = 0;
 	limit.row_count = 15;
-	DB::DataResultSet *res = query->select(where, DB::EQuerySortMode_Ascending, &limit);
+	DB::DataResultSet *res = query->select(where, &order, &limit);
 	Core::Iterator<Core::Vector<void *>, void *> it = res->begin();
 	while(it != res->end()) {
 		User *user = (User *)*it;
