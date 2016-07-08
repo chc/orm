@@ -20,19 +20,24 @@ namespace DB {
 		private:
 			MYSQL *conn;
 	};
+	typedef struct {
+
+	} MySQLRelationshipQueryData;
 	class MySQLDataQuery : public DataQuery {
 		public:
 			MySQLDataQuery(MySQLDataSource *source, QueryableClassDesc *class_desc);
 			DataRow* select(int pk_id);
-			DataResultSet* select(QuerySearchParams *search_params, QueryOrder *query_order, QueryLimit *limit);
+			DataResultSet* select(QuerySearchParams *search_params, QueryOrder *query_order, QueryLimit *limit, bool with_relationships);
 			DataRow* remove(int pk_id);
 			DataResultSet* remove(QuerySearchParams *search_params);
 			void *create_object_from_row(MYSQL_RES *res, MYSQL_ROW row);
 		private:
+			MySQLRelationshipQueryData get_relationship_data(QuerySearchParams *search_params);
+			void create_select_statement(MySQLRelationshipQueryData *res_dat, char *msg, int len);
 			void build_base_select_query();
 			void create_where_statement(QuerySearchParams *search_params, char *out, int len);
- 		  void create_limit_statement(QueryLimit *limit, char *out, int len);
- 		  void create_order_statement(QueryOrder *query_order, char *out, int len);
+	        void create_limit_statement(QueryLimit *limit, char *out, int len);
+ 		    void create_order_statement(QueryOrder *query_order, char *out, int len);
 			char *mp_base_select_query;
 			MySQLDataSource *mp_data_src;
 	};

@@ -10,7 +10,48 @@ namespace DB {
 	DataRow* MySQLDataQuery::select(int pk_id) {
 		return NULL;
 	}
-	DataResultSet* MySQLDataQuery::select(QuerySearchParams *search_params, QueryOrder *query_order, QueryLimit *limit) {
+	void MySQLDataQuery::create_select_statement(MySQLRelationshipQueryData *res_dat, char *msg, int len) {
+		char buff[4096];
+		char tmp[128];
+
+		char alias[16], col_alias[16];
+
+		memset(&buff,0,sizeof(buff));
+		strcpy(buff, "SELECT ");
+		for(int i=0;i<mp_class_desc->num_members;i++) {
+			snprintf(alias, sizeof(alias), "mc%d",i);
+			sprintf(tmp, "`mt0`.`%s` `%s`,", mp_class_desc->variable_map[i].variable_name, alias);
+			strcat(buff, tmp);
+		}
+		if(res_dat && mp_class_desc->relations) {
+			for(int i=0;i<mp_class_desc->num_relations;i++) {
+				if(mp_class_desc->relations[i].relation_type != ERelationshipType_OneToOne) continue;
+				snprintf(alias, sizeof(alias), "mt%d",i+1);
+				QueryableClassDesc *target_desc = mp_class_desc->relations[i].target_class_desc;
+				for(int j=0;j<target_desc->num_members;j++) {
+					snprintf(col_alias, sizeof(col_alias), "mt%d_c%d",i+1,j);
+					sprintf(tmp, "`%s`.`%s` `%s`,",alias, target_desc->variable_map[j].variable_name, col_alias);
+					strcat(buff, tmp);
+				}
+				buff[strlen(buff)-1] = 0;
+			}
+
+			sprintf(tmp, " FROM `%s` `mt0`",mp_class_desc->tableName);
+			strcat(buff, tmp);
+			//add join statements
+			for(int i=0;i<mp_class_desc->num_relations;i++) {
+				QueryableClassRelationshipDesc *relation = &mp_class_desc->relations[i];
+				if(relation->relation_type != ERelationshipType_OneToOne) continue;
+				snprintf(alias, sizeof(alias), "mt_c%d",i+1);
+				
+				sprintf(tmp, " LEFT JOIN `%s` `%s` on `%s`.`%s` = `mt0`.`%s`", relation->target_class_desc->tableName,alias, alias, relation->target_column, relation->source_column);
+				strcat(buff, tmp);
+			}			
+		}
+
+		printf("rel query: %s\n", buff);
+	}
+	DataResultSet* MySQLDataQuery::select(QuerySearchParams *search_params, QueryOrder *query_order, QueryLimit *limit, bool with_relations) {
 		char query[MYSQL_QUERY_BUFF_SIZE];
 		char where[256];
 		char order[256];
@@ -18,13 +59,21 @@ namespace DB {
 		where[0] = 0;
 		order[0] = 0;
 		limit_stmt[0] = 0;
+
+		MySQLRelationshipQueryData rel_query_data;
+		if(with_relations) {
+			rel_query_data = get_relationship_data(search_params);
+		}
+		create_select_statement(with_relations?(MySQLRelationshipQueryData *)&rel_query_data : NULL, (char *)&query, sizeof(query));
 		
 
-		create_where_statement(search_params, where, sizeof(where));
 		create_limit_statement(limit, (char *)&limit_stmt, sizeof(limit_stmt));
 		create_order_statement(query_order, (char *)&order, sizeof(order));
-		strcpy(query, mp_base_select_query);
-		strcat(query, where);
+
+		if(search_params) {
+			create_where_statement(search_params, where, sizeof(where));
+			strcat(query, where);
+		}
   	
 		if(order[0] != 0)
 			strcat(query, order);
@@ -40,7 +89,6 @@ namespace DB {
 
 		DataResultSet *result_set = new DataResultSet;
 		MYSQL_ROW row;
-		int num_fields = mysql_num_fields(res);
 		while((row = mysql_fetch_row(res))) {
 			mysql_field_seek(res, 0);
 			result_set->AddObject(create_object_from_row(res, row));
@@ -48,8 +96,13 @@ namespace DB {
 		mysql_free_result(res);
 		return result_set;
 	}
+	MySQLRelationshipQueryData MySQLDataQuery::get_relationship_data(QuerySearchParams *search_params) {
+		MySQLRelationshipQueryData ret;
+		return ret;
+	}
 	void *MySQLDataQuery::create_object_from_row(MYSQL_RES *res, MYSQL_ROW row) {
 		void *obj = mp_class_desc->mpFactoryMethod(mp_data_src);
+		int num_fields = mysql_num_fields(res);
 		for(int i=0;i<mp_class_desc->num_members;i++) {
 			MYSQL_FIELD *field = mysql_fetch_field(res);
 			if(mp_class_desc->variable_map[i].mpSetMethod != NULL) {
@@ -58,7 +111,6 @@ namespace DB {
 				mp_class_desc->variable_map[i].mpSetMethod((DB::DataSourceLinkedClass*)obj, data, field->name);
 			}
 		}
-		printf("Ret factory: %p\n", obj);
 		return obj;
 	}
 	DataRow* MySQLDataQuery::remove(int pk_id) {

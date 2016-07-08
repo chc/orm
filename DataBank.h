@@ -42,6 +42,7 @@ enum EDataType {
 	EDataType_Vector,
 	EDataType_Matrix,
 	EDataType_Array,
+	EDataType_VoidPtr,
 	EDataType_VariableName, //string of
 };
 
@@ -53,6 +54,7 @@ struct sGenericData {
 	union {
 		const char *mString;
 		uint32_t 	uInt32Data;
+		void		*pVoidPtr;
 		sGenericDataArray *mpArray;
 	} sUnion;
 };

@@ -25,6 +25,13 @@ namespace DB {
 	void DataSourceLinkedClass::unlock() {
 
 	}
+	DB::QueryVariableMemberMap *DataSourceLinkedClass::getPrimaryKey() {
+		DB::QueryVariableMemberMap *memberMap;
+		int num_members;
+		memberMap = this->getMemberMap(num_members);
+		DB::QueryVariableMemberMap *pk = getMemberByName("id", memberMap, num_members);
+		return pk;
+	}
 	
 	DB::QueryVariableMemberMap *getMemberByName(const char *name, DB::QueryVariableMemberMap *memberMap, int num_instances) {
 	for(int i=0;i<num_instances;i++) {

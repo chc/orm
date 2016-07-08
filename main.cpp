@@ -11,13 +11,6 @@ class User : public DB::DataSourceLinkedClass {
 		~User() {
 
 		}
-		DB::QueryVariableMemberMap *getPrimaryKey() {
-			DB::QueryVariableMemberMap *memberMap;
-			int num_members;
-			memberMap = this->getMemberMap(num_members);
-			DB::QueryVariableMemberMap *pk = getMemberByName("id", memberMap, num_members);
-			return pk;
-		}
 		//queryable class impl
 		static DB::QueryableClassDesc *getDesc() {
 			return &User::classDesc;
@@ -62,27 +55,100 @@ class User : public DB::DataSourceLinkedClass {
 	//private:
 		static DB::QueryableClassDesc classDesc;
 		static DB::QueryVariableMemberMap memberMap[];
+		static DB::QueryableClassRelationshipDesc relations[];
 		const char *username;
 		const char *password;
 		int id;
 };
-
 DB::QueryVariableMemberMap User::memberMap[] = {
 	{"id", EDataType_UInt32, User::dbsrc_SetID, User::dbsrc_GetID},
 	{"username", EDataType_String_ASCII, User::dbsrc_SetUsername, User::dbsrc_GetUsername},
 	{"password", EDataType_String_ASCII, User::dbsrc_SetPassword, User::dbsrc_GetPassword},
 };
-DB::QueryableClassDesc User::classDesc = {"user", "test", 3, (DB::QueryVariableMemberMap *)&User::memberMap, User::userFactory};
+DB::QueryableClassDesc User::classDesc = {"user", "test", 3, (DB::QueryVariableMemberMap *)&User::memberMap, 0, NULL, User::userFactory};
+
+
+class Profile : public DB::DataSourceLinkedClass {
+	public:
+		Profile(DB::DataRow *row) : DB::DataSourceLinkedClass(row) {
+			printf("New profile\n");
+			userObj = NULL;
+		}
+		Profile(DB::DataSource *src) : DB::DataSourceLinkedClass(src) {
+			printf("New profile\n");
+			userObj = NULL;
+		}
+		~Profile() {
+
+		}
+
+		DB::QueryVariableMemberMap *getMemberMap(int &member_map) {
+			member_map = Profile::classDesc.num_members;
+			return (DB::QueryVariableMemberMap *)&Profile::memberMap;
+		}
+		DB::QueryableClassDesc *getClassDesc() {
+			return Profile::getDesc();
+		}
+		static DB::QueryableClassDesc *getDesc() {
+			return &Profile::classDesc;
+		}
+
+		static void dbsrc_SetUsername(DataSourceLinkedClass *obj, sGenericData *data, const char *variable_name) {
+			((Profile *)obj)->username = strdup(data->sUnion.mString);
+		}
+		static void dbsrc_SetID(DataSourceLinkedClass *obj, sGenericData *data, const char *variable_name) {
+			((Profile *)obj)->id = (data->sUnion.uInt32Data);
+		}
+
+		static void* profileFactory(DB::DataSource *src) {
+			return (void *)new Profile(src);
+		}
+		static sGenericData dbsrc_GetUsername(DataSourceLinkedClass *obj, const char *variable_name) {
+			sGenericData data;
+			data.type = EDataType_String_ASCII;
+			data.sUnion.mString = ((Profile *)obj)->username;
+			return data;
+		}
+		static sGenericData dbsrc_GetID(DataSourceLinkedClass *obj, const char *variable_name) {
+			sGenericData data;
+			data.type = EDataType_UInt32;
+			data.sUnion.uInt32Data = ((Profile *)obj)->id;
+			return data;
+		}
+
+		static void dbsrc_SetUser(DataSourceLinkedClass *obj, sGenericData *data, const char *variable_name) {
+			((Profile *)obj)->userObj = (User *)(data->sUnion.pVoidPtr);
+		}
+
+		static DB::QueryableClassDesc classDesc;
+		static DB::QueryVariableMemberMap memberMap[];
+		static DB::QueryableClassRelationshipDesc relationships[];
+
+		int id;
+		const char *username;
+		User *userObj;
+		int user_id;
+};
+DB::QueryVariableMemberMap Profile::memberMap[] = {
+	{"id", EDataType_UInt32, Profile::dbsrc_SetID, Profile::dbsrc_GetID},
+	{"username", EDataType_String_ASCII, Profile::dbsrc_SetUsername, Profile::dbsrc_GetUsername},
+};
+
+DB::QueryableClassRelationshipDesc Profile::relationships[] = {
+	{"user_id", "id", DB::ERelationshipType_OneToOne, Profile::dbsrc_SetUser, &User::classDesc},
+};
+DB::QueryableClassDesc Profile::classDesc = {"profile", "test", 2, (DB::QueryVariableMemberMap *)&Profile::memberMap, 1 ,(DB::QueryableClassRelationshipDesc *)&Profile::relationships, Profile::profileFactory};
 
 int main() {
 	DB::QuerySearchParams *where = new DB::QuerySearchParams();
 	sGenericData *d1 = (sGenericData *)malloc(sizeof(sGenericData)), *d2 = (sGenericData *)malloc(sizeof(sGenericData));
+	//user query tester
 	where->pushOperator(DB::EQueryOperator_Less);
 	//where->pushOperator(DB::EQueryOperator_And);
 	d1->type = EDataType_UInt32;
 	d2->type = EDataType_VariableName;
 	d1->sUnion.uInt32Data = 10;
-	d2->sUnion.mString = "id";
+	d2->sUnion.mString = "id"; //getFullColumnFromVariable(Profile::getDesc(), User::memberMap[0]) << for when profile is primary table and selecting user id
 	where->pushData(d2);
 	where->pushData(d1);
 	DB::MySQLDataSource *db = new DB::MySQLDataSource();
@@ -104,8 +170,19 @@ int main() {
 		user->save();
 		it++;
 	}
-
 	query->remove(where);
+	delete where;
+	//profile
+	query = db->makeSelectQuery(Profile::getDesc(), NULL);
+	printf("Profile query: %p\n", query);
+	res = query->select(NULL, &order, &limit);
+	printf("Profile res: %p\n", res);
+	Core::Iterator<Core::Vector<void *>, void *> it2 = res->begin();
+	while(it2 != res->end()) {
+		Profile *profile = (Profile *)*it2;
+		printf("Profile: %d || %s || %d || %p\n",profile->id, profile->username, profile->user_id, profile->userObj);
+		it2++;
+	}
 	delete db;
 	return 0;
 }

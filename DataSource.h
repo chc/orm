@@ -4,6 +4,9 @@
 #include "Vector.h"
 #include "Iterator.h"
 
+/*
+	each object context is not thread safe!!
+*/
 
 namespace DB {
 	class DataSource;
@@ -72,14 +75,34 @@ namespace DB {
 		sGenericData (*mpGetMethod)(DataSourceLinkedClass *obj, const char *variable_name);
 	} QueryVariableMemberMap;
 
-	typedef struct {
+
+	enum ERelationshipType {
+		ERelationshipType_OneToOne,
+		ERelationshipType_OneToMany,
+	};
+	typedef struct TAGQueryableClassDesc QueryableClassDesc;
+	
+	typedef struct TAGQueryableClassRelationshipDesc {
+		const char *source_column;
+		const char *target_column;
+		ERelationshipType relation_type;
+		void (*mpSetMethod)(DataSourceLinkedClass *obj, sGenericData *data, const char *variable_name);
+		QueryableClassDesc *target_class_desc;
+	} QueryableClassRelationshipDesc;
+
+	typedef struct TAGQueryableClassDesc {
 		const char *tableName;
 		const char *database; //can be null
 		int num_members;
 		QueryVariableMemberMap *variable_map;
+
+		int num_relations;
+		QueryableClassRelationshipDesc *relations;
 		void *(*mpFactoryMethod)(DataSource *src);
 		sGenericData (*mpGetDataByNameFunc)(const char *variable_name);
 	} QueryableClassDesc;
+
+
 
 	enum EQuerySortMode {
 		EQuerySortMode_Default,
@@ -106,7 +129,7 @@ namespace DB {
 		public:
 			DataQuery(QueryableClassDesc *class_desc);
 			virtual DataRow* select(int pk_id) = 0;
-			virtual DataResultSet* select(QuerySearchParams *search_params = NULL, QueryOrder *order_mode = NULL, QueryLimit *limit = NULL) = 0;
+			virtual DataResultSet* select(QuerySearchParams *search_params = NULL, QueryOrder *order_mode = NULL, QueryLimit *limit = NULL, bool with_relations = true) = 0;
 			virtual DataRow* remove(int pk_id) = 0;
 			virtual DataResultSet* remove(QuerySearchParams *search_params) = 0;
 		protected:
@@ -123,7 +146,7 @@ namespace DB {
 			virtual ~DataSourceLinkedClass() { };
 			virtual DB::QueryVariableMemberMap *getMemberMap(int &member_map) = 0;
 			virtual DB::QueryableClassDesc *getClassDesc() = 0;
-			virtual DB::QueryVariableMemberMap *getPrimaryKey() = 0;
+			DB::QueryVariableMemberMap *getPrimaryKey();
 			void remove();
 			void save();
 			void repull();
