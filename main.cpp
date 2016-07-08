@@ -60,12 +60,6 @@ class User : public DB::DataSourceLinkedClass {
 		const char *password;
 		int id;
 };
-DB::QueryVariableMemberMap User::memberMap[] = {
-	{"id", EDataType_UInt32, User::dbsrc_SetID, User::dbsrc_GetID},
-	{"username", EDataType_String_ASCII, User::dbsrc_SetUsername, User::dbsrc_GetUsername},
-	{"password", EDataType_String_ASCII, User::dbsrc_SetPassword, User::dbsrc_GetPassword},
-};
-DB::QueryableClassDesc User::classDesc = {"user", "test", 3, (DB::QueryVariableMemberMap *)&User::memberMap, 0, NULL, User::userFactory};
 
 
 class Profile : public DB::DataSourceLinkedClass {
@@ -129,6 +123,19 @@ class Profile : public DB::DataSourceLinkedClass {
 		User *userObj;
 		int user_id;
 };
+
+
+DB::QueryVariableMemberMap User::memberMap[] = {
+	{"id", EDataType_UInt32, User::dbsrc_SetID, User::dbsrc_GetID},
+	{"username", EDataType_String_ASCII, User::dbsrc_SetUsername, User::dbsrc_GetUsername},
+	{"password", EDataType_String_ASCII, User::dbsrc_SetPassword, User::dbsrc_GetPassword},
+};
+DB::QueryableClassRelationshipDesc User::relations[] = {
+	{"id", "user_id", DB::ERelationshipType_OneToMany, User::dbsrc_SetUsername, &Profile::classDesc},
+};
+DB::QueryableClassDesc User::classDesc = {"user", "test", 3, (DB::QueryVariableMemberMap *)&User::memberMap, 1, (DB::QueryableClassRelationshipDesc *)&User::relations, User::userFactory};
+
+
 DB::QueryVariableMemberMap Profile::memberMap[] = {
 	{"id", EDataType_UInt32, Profile::dbsrc_SetID, Profile::dbsrc_GetID},
 	{"username", EDataType_String_ASCII, Profile::dbsrc_SetUsername, Profile::dbsrc_GetUsername},
