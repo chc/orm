@@ -23,7 +23,7 @@ namespace DB {
 			sprintf(tmp, "`mt0`.`%s` `%s`,", mp_class_desc->variable_map[i].variable_name, alias);
 			strcat(buff, tmp);
 		}
-		buff[strlen(buff)-1] = 0;
+		
 		if(res_dat && mp_class_desc->relations) {
 			for(int i=0;i<mp_class_desc->num_relations;i++) {
 				if(mp_class_desc->relations[i].relation_type != ERelationshipType_OneToOne) continue;
@@ -35,8 +35,8 @@ namespace DB {
 					strcat(buff, tmp);
 				}
 			}
-			buff[strlen(buff)-1] = 0;
 		}
+		buff[strlen(buff)-1] = 0;
 		sprintf(tmp, " FROM `%s` `mt0`",mp_class_desc->tableName);
 		strcat(buff, tmp);
 		if(res_dat && mp_class_desc->relations) {
@@ -44,7 +44,7 @@ namespace DB {
 			for(int i=0;i<mp_class_desc->num_relations;i++) {
 				QueryableClassRelationshipDesc *relation = &mp_class_desc->relations[i];
 				if(relation->relation_type != ERelationshipType_OneToOne) continue;
-				snprintf(alias, sizeof(alias), "mt_c%d",i+1);
+				snprintf(alias, sizeof(alias), "mt%d",i+1);
 				
 				sprintf(tmp, " LEFT JOIN `%s` `%s` on `%s`.`%s` = `mt0`.`%s`", relation->target_class_desc->tableName,alias, alias, relation->target_column, relation->source_column);
 				strcat(buff, tmp);
@@ -71,7 +71,7 @@ namespace DB {
 		
 
 		create_limit_statement(limit, (char *)&limit_stmt, sizeof(limit_stmt));
-		create_order_statement(query_order, (char *)&order, sizeof(order));
+		//create_order_statement(query_order, (char *)&order, sizeof(order));
 
 		if(search_params) {
 			create_where_statement(search_params, where, sizeof(where));
@@ -122,7 +122,8 @@ namespace DB {
 			QueryableClassDesc *target_desc = mp_class_desc->relations[i].target_class_desc;
 			void *related_object = target_desc->mpFactoryMethod(mp_data_src);
 			for(int j=0;j<target_desc->num_members;j++) {
-				data = getGenericFromString(row[field_offset + (i*j)], mp_class_desc->variable_map[i].dataType);
+				field = mysql_fetch_field(res);
+				data = getGenericFromString(row[field_offset + ((i+1)*j)], target_desc->variable_map[j].dataType);
 				target_desc->variable_map[j].mpSetMethod((DB::DataSourceLinkedClass *)related_object, data, field->name);
 			}
 			sGenericData saveData;
