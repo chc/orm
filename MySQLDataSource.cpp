@@ -23,6 +23,7 @@ namespace DB {
 			sprintf(tmp, "`mt0`.`%s` `%s`,", mp_class_desc->variable_map[i].variable_name, alias);
 			strcat(buff, tmp);
 		}
+		buff[strlen(buff)-1] = 0;
 		if(res_dat && mp_class_desc->relations) {
 			for(int i=0;i<mp_class_desc->num_relations;i++) {
 				if(mp_class_desc->relations[i].relation_type != ERelationshipType_OneToOne) continue;
@@ -33,11 +34,12 @@ namespace DB {
 					sprintf(tmp, "`%s`.`%s` `%s`,",alias, target_desc->variable_map[j].variable_name, col_alias);
 					strcat(buff, tmp);
 				}
-				buff[strlen(buff)-1] = 0;
 			}
-
-			sprintf(tmp, " FROM `%s` `mt0`",mp_class_desc->tableName);
-			strcat(buff, tmp);
+			buff[strlen(buff)-1] = 0;
+		}
+		sprintf(tmp, " FROM `%s` `mt0`",mp_class_desc->tableName);
+		strcat(buff, tmp);
+		if(res_dat && mp_class_desc->relations) {
 			//add join statements
 			for(int i=0;i<mp_class_desc->num_relations;i++) {
 				QueryableClassRelationshipDesc *relation = &mp_class_desc->relations[i];
@@ -46,9 +48,9 @@ namespace DB {
 				
 				sprintf(tmp, " LEFT JOIN `%s` `%s` on `%s`.`%s` = `mt0`.`%s`", relation->target_class_desc->tableName,alias, alias, relation->target_column, relation->source_column);
 				strcat(buff, tmp);
-			}			
+			}	
 		}
-
+		strcpy(msg, buff);
 		printf("rel query: %s\n", buff);
 	}
 	DataResultSet* MySQLDataQuery::select(QuerySearchParams *search_params, QueryOrder *query_order, QueryLimit *limit, bool with_relations) {
@@ -59,6 +61,7 @@ namespace DB {
 		where[0] = 0;
 		order[0] = 0;
 		limit_stmt[0] = 0;
+		query[0] = 0;
 
 		MySQLRelationshipQueryData rel_query_data;
 		if(with_relations) {
@@ -103,13 +106,29 @@ namespace DB {
 	void *MySQLDataQuery::create_object_from_row(MYSQL_RES *res, MYSQL_ROW row) {
 		void *obj = mp_class_desc->mpFactoryMethod(mp_data_src);
 		int num_fields = mysql_num_fields(res);
+		MYSQL_FIELD *field;
+		sGenericData *data;
 		for(int i=0;i<mp_class_desc->num_members;i++) {
-			MYSQL_FIELD *field = mysql_fetch_field(res);
+			field = mysql_fetch_field(res);
 			if(mp_class_desc->variable_map[i].mpSetMethod != NULL) {
-				sGenericData *data;
 				data = getGenericFromString(row[i], mp_class_desc->variable_map[i].dataType);
 				mp_class_desc->variable_map[i].mpSetMethod((DB::DataSourceLinkedClass*)obj, data, field->name);
 			}
+		}
+
+		int field_offset = mysql_field_tell(res);
+		for(int i=0;i<mp_class_desc->num_relations;i++) {
+			if(mp_class_desc->relations[i].relation_type != ERelationshipType_OneToOne) continue;
+			QueryableClassDesc *target_desc = mp_class_desc->relations[i].target_class_desc;
+			void *related_object = target_desc->mpFactoryMethod(mp_data_src);
+			for(int j=0;j<target_desc->num_members;j++) {
+				data = getGenericFromString(row[field_offset + (i*j)], mp_class_desc->variable_map[i].dataType);
+				target_desc->variable_map[j].mpSetMethod((DB::DataSourceLinkedClass *)related_object, data, field->name);
+			}
+			sGenericData saveData;
+			saveData.sUnion.pVoidPtr = related_object;
+			saveData.type = EDataType_VoidPtr;
+			mp_class_desc->relations[i].mpSetMethod((DB::DataSourceLinkedClass*)obj, &saveData, NULL);
 		}
 		return obj;
 	}
