@@ -116,6 +116,7 @@ namespace DB {
 			}
 		}
 
+		//load one to one
 		int field_offset = mysql_field_tell(res);
 		for(int i=0;i<mp_class_desc->num_relations;i++) {
 			if(mp_class_desc->relations[i].relation_type != ERelationshipType_OneToOne) continue;
@@ -130,6 +131,14 @@ namespace DB {
 			saveData.sUnion.pVoidPtr = related_object;
 			saveData.type = EDataType_VoidPtr;
 			mp_class_desc->relations[i].mpSetMethod((DB::DataSourceLinkedClass*)obj, &saveData, NULL);
+		}
+
+		//load one to many
+		for(int i=0;i<mp_class_desc->num_relations;i++) {
+			if(mp_class_desc->relations[i].relation_type != ERelationshipType_OneToMany) continue;
+			DB::QueryVariableMemberMap *source_column = getMemberByName(mp_class_desc->relations[i].source_column, this->mp_class_desc->variable_map, this->mp_class_desc->num_members);
+			DB::QueryVariableMemberMap *target_column = getMemberByName(mp_class_desc->relations[i].target_column, mp_class_desc->relations[i].target_class_desc->variable_map, mp_class_desc->relations[i].target_class_desc->num_members);
+			printf("Load members: %s || %s || %p || %p\n",mp_class_desc->relations[i].source_column, mp_class_desc->relations[i].target_column, source_column, target_column);
 		}
 		return obj;
 	}

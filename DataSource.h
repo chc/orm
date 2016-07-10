@@ -87,6 +87,7 @@ namespace DB {
 		const char *target_column;
 		ERelationshipType relation_type;
 		void (*mpSetMethod)(DataSourceLinkedClass *obj, sGenericData *data, const char *variable_name);
+		void (*mpListAppendMethod)(DataSourceLinkedClass *obj, const char *variable_name, DataSourceLinkedClass *child);
 		QueryableClassDesc *target_class_desc;
 	} QueryableClassRelationshipDesc;
 
@@ -147,6 +148,7 @@ namespace DB {
 			virtual DB::QueryVariableMemberMap *getMemberMap(int &member_map) = 0;
 			virtual DB::QueryableClassDesc *getClassDesc() = 0;
 			DB::QueryVariableMemberMap *getPrimaryKey();
+			sGenericData getDataFromMemberMap(DB::QueryVariableMemberMap *map);
 			void remove();
 			void save();
 			void repull();

@@ -52,6 +52,13 @@ class User : public DB::DataSourceLinkedClass {
 			data.sUnion.uInt32Data = ((User *)obj)->id;
 			return data;
 		}
+
+		static Core::Vector<DB::DataSourceLinkedClass *> *dbsrc_GetProfiles(DataSourceLinkedClass *obj, const char *variable_name) {
+			return &((User *)obj)->m_profiles;
+		}
+		static void dbsrc_AppendProfile(DataSourceLinkedClass *obj, const char *variable_name, DataSourceLinkedClass *child) {
+			((User *)obj)->m_profiles.add(child);
+		}
 	//private:
 		static DB::QueryableClassDesc classDesc;
 		static DB::QueryVariableMemberMap memberMap[];
@@ -59,6 +66,8 @@ class User : public DB::DataSourceLinkedClass {
 		const char *username;
 		const char *password;
 		int id;
+
+		Core::Vector<DB::DataSourceLinkedClass *> m_profiles;
 };
 
 
@@ -93,6 +102,9 @@ class Profile : public DB::DataSourceLinkedClass {
 		static void dbsrc_SetID(DataSourceLinkedClass *obj, sGenericData *data, const char *variable_name) {
 			((Profile *)obj)->id = (data->sUnion.uInt32Data);
 		}
+		static void dbsrc_SetUserID(DataSourceLinkedClass *obj, sGenericData *data, const char *variable_name) {
+			((Profile *)obj)->user_id = (data->sUnion.uInt32Data);
+		}
 
 		static void* profileFactory(DB::DataSource *src) {
 			return (void *)new Profile(src);
@@ -107,6 +119,13 @@ class Profile : public DB::DataSourceLinkedClass {
 			sGenericData data;
 			data.type = EDataType_UInt32;
 			data.sUnion.uInt32Data = ((Profile *)obj)->id;
+			return data;
+		}
+
+		static sGenericData dbsrc_GetUserID(DataSourceLinkedClass *obj, const char *variable_name) {
+			sGenericData data;
+			data.type = EDataType_UInt32;
+			data.sUnion.uInt32Data = ((Profile *)obj)->user_id;
 			return data;
 		}
 
@@ -131,7 +150,7 @@ DB::QueryVariableMemberMap User::memberMap[] = {
 	{"password", EDataType_String_ASCII, User::dbsrc_SetPassword, User::dbsrc_GetPassword},
 };
 DB::QueryableClassRelationshipDesc User::relations[] = {
-	{"id", "user_id", DB::ERelationshipType_OneToMany, User::dbsrc_SetUsername, &Profile::classDesc},
+	{"id", "user_id", DB::ERelationshipType_OneToMany, NULL, NULL, &Profile::classDesc},
 };
 DB::QueryableClassDesc User::classDesc = {"user", "test", 3, (DB::QueryVariableMemberMap *)&User::memberMap, 1, (DB::QueryableClassRelationshipDesc *)&User::relations, User::userFactory};
 
@@ -139,12 +158,13 @@ DB::QueryableClassDesc User::classDesc = {"user", "test", 3, (DB::QueryVariableM
 DB::QueryVariableMemberMap Profile::memberMap[] = {
 	{"id", EDataType_UInt32, Profile::dbsrc_SetID, Profile::dbsrc_GetID},
 	{"username", EDataType_String_ASCII, Profile::dbsrc_SetUsername, Profile::dbsrc_GetUsername},
+	{"user_id", EDataType_UInt32, Profile::dbsrc_SetUserID, Profile::dbsrc_GetUserID},
 };
 
 DB::QueryableClassRelationshipDesc Profile::relationships[] = {
-	{"user_id", "id", DB::ERelationshipType_OneToOne, Profile::dbsrc_SetUser, &User::classDesc},
+	{"user_id", "id", DB::ERelationshipType_OneToOne, Profile::dbsrc_SetUser, NULL, &User::classDesc},
 };
-DB::QueryableClassDesc Profile::classDesc = {"profile", "test", 2, (DB::QueryVariableMemberMap *)&Profile::memberMap, 1 ,(DB::QueryableClassRelationshipDesc *)&Profile::relationships, Profile::profileFactory};
+DB::QueryableClassDesc Profile::classDesc = {"profile", "test", 3, (DB::QueryVariableMemberMap *)&Profile::memberMap, 1 ,(DB::QueryableClassRelationshipDesc *)&Profile::relationships, Profile::profileFactory};
 
 int main() {
 	DB::QuerySearchParams *where = new DB::QuerySearchParams();

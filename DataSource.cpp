@@ -34,12 +34,15 @@ namespace DB {
 	}
 	
 	DB::QueryVariableMemberMap *getMemberByName(const char *name, DB::QueryVariableMemberMap *memberMap, int num_instances) {
-	for(int i=0;i<num_instances;i++) {
-		if(strcmp(name, memberMap[i].variable_name) == 0) {
-			return &memberMap[i];
+		for(int i=0;i<num_instances;i++) {
+			if(strcmp(name, memberMap[i].variable_name) == 0) {
+				return &memberMap[i];
+			}
 		}
+		return NULL;
 	}
-	return NULL;
+	sGenericData DataSourceLinkedClass::getDataFromMemberMap(DB::QueryVariableMemberMap *map) {
+		return map->mpGetMethod(this, map->variable_name);
 	}
 	QuerySearchParams::QuerySearchParams() {
 
