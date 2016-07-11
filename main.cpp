@@ -1,6 +1,6 @@
 #include "DataSource.h"
 #include "MySQLDataSource.h"
-class User : public DB::DataSourceLinkedClass {
+class User : public DB::DataSourceLinkedClass, public Core::CachedObject<User *, int> {
 	public:
 		User(DB::DataRow *row) : DB::DataSourceLinkedClass(row) {
 			printf("New user\n");
@@ -70,8 +70,10 @@ class User : public DB::DataSourceLinkedClass {
 		Core::Vector<DB::DataSourceLinkedClass *> m_profiles;
 };
 
+template<>
+Core::CachedObjectManager<User *, int> *Core::CachedObject<User *, int>::mp_cache_mgr = new Core::CachedObjectManager<User * , int>();
 
-class Profile : public DB::DataSourceLinkedClass {
+class Profile : public DB::DataSourceLinkedClass, public Core::CachedObject<Profile *, int> {
 	public:
 		Profile(DB::DataRow *row) : DB::DataSourceLinkedClass(row) {
 			printf("New profile\n");
@@ -142,6 +144,9 @@ class Profile : public DB::DataSourceLinkedClass {
 		User *userObj;
 		int user_id;
 };
+
+template<>
+Core::CachedObjectManager<Profile *, int> *Core::CachedObject<Profile *, int>::mp_cache_mgr = new Core::CachedObjectManager<Profile * , int>();
 
 
 DB::QueryVariableMemberMap User::memberMap[] = {
