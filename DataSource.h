@@ -149,6 +149,7 @@ namespace DB {
 			virtual DB::QueryableClassDesc *getClassDesc() = 0;
 			DB::QueryVariableMemberMap *getPrimaryKey();
 			sGenericData getDataFromMemberMap(DB::QueryVariableMemberMap *map);
+			virtual void SetIdentifier(int pk) = 0;
 			void remove();
 			void save();
 			void repull();

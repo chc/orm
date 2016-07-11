@@ -48,6 +48,8 @@ namespace Core {
 		void SetCacheIdentifier(IdentType identifier) {
 			if(!m_object_inserted) {
 				this->mp_cache_mgr->InsertInstance(identifier, (T)this);
+				m_object_inserted = true;
+				printf("Inserted from ident: %d\n",identifier);
 			}
 			m_ident_type = identifier;
 

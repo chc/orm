@@ -11,6 +11,9 @@ class User : public DB::DataSourceLinkedClass, public Core::CachedObject<User *,
 		~User() {
 
 		}
+		void SetIdentifier(int pk)  {
+			this->SetCacheIdentifier(pk);
+		}
 		//queryable class impl
 		static DB::QueryableClassDesc *getDesc() {
 			return &User::classDesc;
@@ -93,6 +96,9 @@ class Profile : public DB::DataSourceLinkedClass, public Core::CachedObject<Prof
 		}
 		DB::QueryableClassDesc *getClassDesc() {
 			return Profile::getDesc();
+		}
+		void SetIdentifier(int pk)  {
+			this->SetCacheIdentifier(pk);
 		}
 		static DB::QueryableClassDesc *getDesc() {
 			return &Profile::classDesc;

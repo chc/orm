@@ -108,11 +108,16 @@ namespace DB {
 		int num_fields = mysql_num_fields(res);
 		MYSQL_FIELD *field;
 		sGenericData *data;
+		//DB::QueryVariableMemberMap *getPrimaryKey();
+		DB::QueryVariableMemberMap *pk = ((DataSourceLinkedClass *)obj)->getPrimaryKey();
 		for(int i=0;i<mp_class_desc->num_members;i++) {
 			field = mysql_fetch_field(res);
 			if(mp_class_desc->variable_map[i].mpSetMethod != NULL) {
 				data = getGenericFromString(row[i], mp_class_desc->variable_map[i].dataType);
 				mp_class_desc->variable_map[i].mpSetMethod((DB::DataSourceLinkedClass*)obj, data, field->name);
+			}
+			if((DB::QueryVariableMemberMap *)&(mp_class_desc->variable_map[i]) == pk) {
+				
 			}
 		}
 
@@ -169,6 +174,7 @@ namespace DB {
 
 		mp_base_select_query = strdup(buff);
 	}
+
 	void MySQLDataQuery::create_where_statement(QuerySearchParams *search_params, char *out, int len) {
 		char where[1024];
 		char temp[128];
