@@ -25,25 +25,11 @@ namespace DB {
 	void DataSourceLinkedClass::unlock() {
 
 	}
-	DB::QueryVariableMemberMap *DataSourceLinkedClass::getPrimaryKey() {
-		DB::QueryVariableMemberMap *memberMap;
-		int num_members;
-		memberMap = this->getMemberMap(num_members);
-		DB::QueryVariableMemberMap *pk = getMemberByName("id", memberMap, num_members);
-		return pk;
-	}
-	
-	DB::QueryVariableMemberMap *getMemberByName(const char *name, DB::QueryVariableMemberMap *memberMap, int num_instances) {
-		for(int i=0;i<num_instances;i++) {
-			if(strcmp(name, memberMap[i].variable_name) == 0) {
-				return &memberMap[i];
-			}
-		}
-		return NULL;
-	}
-	sGenericData DataSourceLinkedClass::getDataFromMemberMap(DB::QueryVariableMemberMap *map) {
+/*
+	sGenericData getDataFromMemberMap(DB::QueryVariableMemberMap *map) {
 		return map->mpGetMethod(this, map->variable_name);
 	}
+*/
 	QuerySearchParams::QuerySearchParams() {
 
 	}
@@ -57,5 +43,20 @@ namespace DB {
 		m_query_data.add(data);
 	}
 
+	DB::QueryVariableMemberMap *getPrimaryKey(QueryableClassDesc *class_desc, int *output_index) {
+		return getMemberByName(class_desc,"id", output_index);
+	}
+	
+	DB::QueryVariableMemberMap *getMemberByName(QueryableClassDesc *class_desc, const char *name, int *output_index) {
+		for(int i=0;i<class_desc->num_members;i++) {
+			if(strcmp(name, class_desc->variable_map[i].variable_name) == 0) {
+				if(output_index) {
+					*output_index = i;
+				}
+				return &class_desc->variable_map[i];
+			}
+		}
+		return NULL;
+	}
 
 }

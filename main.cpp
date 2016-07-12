@@ -1,5 +1,11 @@
 #include "DataSource.h"
 #include "MySQLDataSource.h"
+
+
+class User;
+template<>
+Core::CachedObjectManager<User *, int> *Core::CachedObject<User *, int>::mp_cache_mgr = new Core::CachedObjectManager<User * , int>();
+
 class User : public DB::DataSourceLinkedClass, public Core::CachedObject<User *, int> {
 	public:
 		User(DB::DataRow *row) : DB::DataSourceLinkedClass(row) {
@@ -26,9 +32,15 @@ class User : public DB::DataSourceLinkedClass, public Core::CachedObject<User *,
 		}
 		static void dbsrc_SetID(DataSourceLinkedClass *obj, sGenericData *data, const char *variable_name) {
 			((User *)obj)->id = (data->sUnion.uInt32Data);
+			((User *)obj)->SetCacheIdentifier(data->sUnion.uInt32Data);
 		}
-		static void* userFactory(DB::DataSource *src) {
-			return (void *)new User(src);
+		static void* userFactory(DB::DataSource *src, int pk_id) {
+			if(Core::CachedObject<User *, int>::mp_cache_mgr->RequestInstance(pk_id)) {
+				return Core::CachedObject<User *, int>::mp_cache_mgr->RequestInstance(pk_id);
+			}
+			User *user = new User(src);
+			Core::CachedObject<User *, int>::mp_cache_mgr->InsertInstance(pk_id, user);
+			return (void *)user; 
 		}
 		DB::QueryVariableMemberMap *getMemberMap(int &member_map) {
 			member_map = User::classDesc.num_members;
@@ -72,9 +84,10 @@ class User : public DB::DataSourceLinkedClass, public Core::CachedObject<User *,
 
 		Core::Vector<DB::DataSourceLinkedClass *> m_profiles;
 };
+class Profile;
 
 template<>
-Core::CachedObjectManager<User *, int> *Core::CachedObject<User *, int>::mp_cache_mgr = new Core::CachedObjectManager<User * , int>();
+Core::CachedObjectManager<Profile *, int> *Core::CachedObject<Profile *, int>::mp_cache_mgr = new Core::CachedObjectManager<Profile * , int>();
 
 class Profile : public DB::DataSourceLinkedClass, public Core::CachedObject<Profile *, int> {
 	public:
@@ -109,13 +122,19 @@ class Profile : public DB::DataSourceLinkedClass, public Core::CachedObject<Prof
 		}
 		static void dbsrc_SetID(DataSourceLinkedClass *obj, sGenericData *data, const char *variable_name) {
 			((Profile *)obj)->id = (data->sUnion.uInt32Data);
+			((Profile *)obj)->SetCacheIdentifier(data->sUnion.uInt32Data);
 		}
 		static void dbsrc_SetUserID(DataSourceLinkedClass *obj, sGenericData *data, const char *variable_name) {
 			((Profile *)obj)->user_id = (data->sUnion.uInt32Data);
 		}
 
-		static void* profileFactory(DB::DataSource *src) {
-			return (void *)new Profile(src);
+		static void* profileFactory(DB::DataSource *src, int pk_id) {
+			if(Core::CachedObject<Profile *, int>::mp_cache_mgr->RequestInstance(pk_id)) {
+				return Core::CachedObject<Profile *, int>::mp_cache_mgr->RequestInstance(pk_id);
+			}
+			Profile *profile = new Profile(src);
+			Core::CachedObject<Profile *, int>::mp_cache_mgr->InsertInstance(pk_id, profile);
+			return (void *)profile; 
 		}
 		static sGenericData dbsrc_GetUsername(DataSourceLinkedClass *obj, const char *variable_name) {
 			sGenericData data;
@@ -150,9 +169,6 @@ class Profile : public DB::DataSourceLinkedClass, public Core::CachedObject<Prof
 		User *userObj;
 		int user_id;
 };
-
-template<>
-Core::CachedObjectManager<Profile *, int> *Core::CachedObject<Profile *, int>::mp_cache_mgr = new Core::CachedObjectManager<Profile * , int>();
 
 
 DB::QueryVariableMemberMap User::memberMap[] = {

@@ -99,7 +99,7 @@ namespace DB {
 
 		int num_relations;
 		QueryableClassRelationshipDesc *relations;
-		void *(*mpFactoryMethod)(DataSource *src);
+		void *(*mpFactoryMethod)(DataSource *src, int pk_id);
 		sGenericData (*mpGetDataByNameFunc)(const char *variable_name);
 	} QueryableClassDesc;
 
@@ -116,7 +116,10 @@ namespace DB {
 		QueryVariableMemberMap *column;
 	} QueryOrder;
 	
-	DB::QueryVariableMemberMap *getMemberByName(const char *name, DB::QueryVariableMemberMap *memberMap, int num_instances);
+
+	QueryVariableMemberMap *getPrimaryKey(QueryableClassDesc *class_desc, int *output_index = NULL);
+
+	DB::QueryVariableMemberMap *getMemberByName(QueryableClassDesc *class_desc, const char *name, int *output_index = NULL);
 
 	typedef struct {
 		int offset;
@@ -147,7 +150,6 @@ namespace DB {
 			virtual ~DataSourceLinkedClass() { };
 			virtual DB::QueryVariableMemberMap *getMemberMap(int &member_map) = 0;
 			virtual DB::QueryableClassDesc *getClassDesc() = 0;
-			DB::QueryVariableMemberMap *getPrimaryKey();
 			sGenericData getDataFromMemberMap(DB::QueryVariableMemberMap *map);
 			virtual void SetIdentifier(int pk) = 0;
 			void remove();

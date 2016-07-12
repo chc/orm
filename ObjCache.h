@@ -12,11 +12,8 @@ namespace Core {
 			Request or create object
 		*/
 		T RequestInstance(IdentType identifier){
-			if(mp_object_list[identifier] == T()) {
-					mp_object_list[identifier] = new T;
-				}
 				return mp_object_list[identifier];
-			}
+		}
 		void InsertInstance(IdentType identifier, T val) {
 			mp_object_list[identifier] = val;
 		}

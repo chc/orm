@@ -104,20 +104,22 @@ namespace DB {
 		return ret;
 	}
 	void *MySQLDataQuery::create_object_from_row(MYSQL_RES *res, MYSQL_ROW row) {
-		void *obj = mp_class_desc->mpFactoryMethod(mp_data_src);
+		int pk_row_index = -1, row_pk = 0, related_row_pk_index = -1, related_row_pk = 0;
+		DB::QueryVariableMemberMap *pk = getPrimaryKey(mp_class_desc, &pk_row_index);
+		DB::QueryVariableMemberMap *related_pk;
+		if(pk_row_index != -1) {
+			row_pk = atoi(row[pk_row_index]);
+		}
+		void *obj = mp_class_desc->mpFactoryMethod(mp_data_src, row_pk);
 		int num_fields = mysql_num_fields(res);
 		MYSQL_FIELD *field;
 		sGenericData *data;
-		//DB::QueryVariableMemberMap *getPrimaryKey();
-		DB::QueryVariableMemberMap *pk = ((DataSourceLinkedClass *)obj)->getPrimaryKey();
+
 		for(int i=0;i<mp_class_desc->num_members;i++) {
 			field = mysql_fetch_field(res);
 			if(mp_class_desc->variable_map[i].mpSetMethod != NULL) {
 				data = getGenericFromString(row[i], mp_class_desc->variable_map[i].dataType);
 				mp_class_desc->variable_map[i].mpSetMethod((DB::DataSourceLinkedClass*)obj, data, field->name);
-			}
-			if((DB::QueryVariableMemberMap *)&(mp_class_desc->variable_map[i]) == pk) {
-				
 			}
 		}
 
@@ -126,7 +128,12 @@ namespace DB {
 		for(int i=0;i<mp_class_desc->num_relations;i++) {
 			if(mp_class_desc->relations[i].relation_type != ERelationshipType_OneToOne) continue;
 			QueryableClassDesc *target_desc = mp_class_desc->relations[i].target_class_desc;
-			void *related_object = target_desc->mpFactoryMethod(mp_data_src);
+			related_pk = getPrimaryKey(target_desc, &related_row_pk_index);
+			if(related_row_pk_index != -1) {
+				related_row_pk = atoi(row[field_offset + related_row_pk_index]);
+				printf("Related row pk: %d\n", related_row_pk);
+			}
+			void *related_object = target_desc->mpFactoryMethod(mp_data_src,related_row_pk);
 			for(int j=0;j<target_desc->num_members;j++) {
 				field = mysql_fetch_field(res);
 				data = getGenericFromString(row[field_offset + ((i+1)*j)], target_desc->variable_map[j].dataType);
@@ -141,8 +148,8 @@ namespace DB {
 		//load one to many
 		for(int i=0;i<mp_class_desc->num_relations;i++) {
 			if(mp_class_desc->relations[i].relation_type != ERelationshipType_OneToMany) continue;
-			DB::QueryVariableMemberMap *source_column = getMemberByName(mp_class_desc->relations[i].source_column, this->mp_class_desc->variable_map, this->mp_class_desc->num_members);
-			DB::QueryVariableMemberMap *target_column = getMemberByName(mp_class_desc->relations[i].target_column, mp_class_desc->relations[i].target_class_desc->variable_map, mp_class_desc->relations[i].target_class_desc->num_members);
+			DB::QueryVariableMemberMap *source_column = getMemberByName(mp_class_desc->relations[i].target_class_desc, mp_class_desc->relations[i].source_column);
+			DB::QueryVariableMemberMap *target_column = getMemberByName(mp_class_desc->relations[i].target_class_desc, mp_class_desc->relations[i].target_column);
 			printf("Load members: %s || %s || %p || %p\n",mp_class_desc->relations[i].source_column, mp_class_desc->relations[i].target_column, source_column, target_column);
 		}
 		return obj;
@@ -300,9 +307,9 @@ namespace DB {
 
 	}
 	void MySQLDataSource::saveObj(DB::DataSourceLinkedClass *obj) {
-		int membermap_count;
-		DB::QueryVariableMemberMap *memberMap = obj->getMemberMap(membermap_count);
-		DB::QueryVariableMemberMap *pk = obj->getPrimaryKey();
+		int membermap_count = obj->getClassDesc()->num_members;
+		DB::QueryVariableMemberMap *memberMap = obj->getClassDesc()->variable_map;
+		DB::QueryVariableMemberMap *pk = getPrimaryKey(obj->getClassDesc());
 		char query[1024];
 		char temp[512];
 		char temp_vardata[256];
