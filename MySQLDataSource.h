@@ -27,7 +27,7 @@ namespace DB {
 		public:
 			MySQLDataQuery(MySQLDataSource *source, QueryableClassDesc *class_desc);
 			DataRow* select(int pk_id);
-			DataResultSet* select(QuerySearchParams *search_params, QueryOrder *query_order, QueryLimit *limit, bool with_relationships);
+			DataResultSet* select(QuerySearchParams *search_params, QueryOrder *query_order = NULL, QueryLimit *limit = NULL, bool with_relationships = true);
 			DataRow* remove(int pk_id);
 			DataResultSet* remove(QuerySearchParams *search_params);
 			void *create_object_from_row(MYSQL_RES *res, MYSQL_ROW row);

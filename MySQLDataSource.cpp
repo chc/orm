@@ -70,7 +70,8 @@ namespace DB {
 		create_select_statement(with_relations?(MySQLRelationshipQueryData *)&rel_query_data : NULL, (char *)&query, sizeof(query));
 		
 
-		create_limit_statement(limit, (char *)&limit_stmt, sizeof(limit_stmt));
+		if(limit != NULL)
+			create_limit_statement(limit, (char *)&limit_stmt, sizeof(limit_stmt));
 		//create_order_statement(query_order, (char *)&order, sizeof(order));
 
 		if(search_params) {
@@ -142,14 +143,63 @@ namespace DB {
 			sGenericData saveData;
 			saveData.sUnion.pVoidPtr = related_object;
 			saveData.type = EDataType_VoidPtr;
-			mp_class_desc->relations[i].mpSetMethod((DB::DataSourceLinkedClass*)obj, &saveData, NULL);
+			mp_class_desc->relations[i].mpSetMethod((DB::DataSourceLinkedClass*)obj, &saveData, NULL); 
 		}
 
 		//load one to many
 		for(int i=0;i<mp_class_desc->num_relations;i++) {
 			if(mp_class_desc->relations[i].relation_type != ERelationshipType_OneToMany) continue;
-			DB::QueryVariableMemberMap *source_column = getMemberByName(mp_class_desc->relations[i].target_class_desc, mp_class_desc->relations[i].source_column);
+			DB::QueryVariableMemberMap *source_column = getMemberByName(mp_class_desc, mp_class_desc->relations[i].source_column);
 			DB::QueryVariableMemberMap *target_column = getMemberByName(mp_class_desc->relations[i].target_class_desc, mp_class_desc->relations[i].target_column);
+
+			sGenericData column_data, pk_data;
+
+			pk_data = source_column->mpGetMethod((DataSourceLinkedClass *)obj, source_column->variable_name);
+
+			column_data.type = EDataType_VariableName;
+			column_data.sUnion.mString = mp_class_desc->relations[i].target_column;
+
+
+			DB::QuerySearchParams *where = new DB::QuerySearchParams();
+			where->pushOperator(DB::EQueryOperator_Equal);
+
+			where->pushData(&column_data);
+			where->pushData(&pk_data);
+
+			MySQLDataQuery *query = new MySQLDataQuery(mp_data_src, mp_class_desc->relations[i].target_class_desc);
+			DB::DataResultSet *res = query->select(where);
+			Core::Iterator<Core::Vector<void *>, void *> it = res->begin();
+
+			void *insert_obj = *it;
+			if(insert_obj) {
+				//void (*mpListAppendMethod)(DataSourceLinkedClass *obj, const char *variable_name, DataSourceLinkedClass *child);
+				printf("Calling append: %p\n", mp_class_desc->relations[i].mpListAppendMethod);
+				mp_class_desc->relations[i].mpListAppendMethod((DB::DataSourceLinkedClass*)obj, NULL, (DataSourceLinkedClass *)insert_obj);
+				printf("Append called\n");
+			}
+
+			delete where;
+			delete query;
+
+			//MySQLDataQuery *mp_rel_query = new MySQLDataQuery(mp_data_src, target);
+
+			/*
+				sGenericData *d1 = (sGenericData *)malloc(sizeof(sGenericData)), *d2 = (sGenericData *)malloc(sizeof(sGenericData));
+	//user query tester
+	where->pushOperator(DB::EQueryOperator_Less);
+	//where->pushOperator(DB::EQueryOperator_And);
+	d1->type = EDataType_UInt32;
+	d2->type = EDataType_VariableName;
+	d1->sUnion.uInt32Data = 10;
+	d2->sUnion.mString = "id"; //getFullColumnFromVariable(Profile::getDesc(), User::memberMap[0]) << for when profile is primary table and selecting user id
+	where->pushData(d2);
+	where->pushData(d1);
+			*/
+
+
+			//sGenericData (*mpGetMethod)(DataSourceLinkedClass *obj, const char *variable_name);
+			printf("Source value: %d\n",source_column->mpGetMethod((DataSourceLinkedClass *)obj, source_column->variable_name).sUnion.uInt32Data);
+
 			printf("Load members: %s || %s || %p || %p\n",mp_class_desc->relations[i].source_column, mp_class_desc->relations[i].target_column, source_column, target_column);
 		}
 		return obj;

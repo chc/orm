@@ -8,10 +8,10 @@ Core::CachedObjectManager<User *, int> *Core::CachedObject<User *, int>::mp_cach
 
 class User : public DB::DataSourceLinkedClass, public Core::CachedObject<User *, int> {
 	public:
-		User(DB::DataRow *row) : DB::DataSourceLinkedClass(row) {
+		User(DB::DataRow *row) : DB::DataSourceLinkedClass(row), Core::CachedObject<User *, int>() {
 			printf("New user\n");
 		}
-		User(DB::DataSource *src) : DB::DataSourceLinkedClass(src) {
+		User(DB::DataSource *src) : DB::DataSourceLinkedClass(src), Core::CachedObject<User *, int>() {
 			printf("New user\n");
 		}
 		~User() {
@@ -72,6 +72,7 @@ class User : public DB::DataSourceLinkedClass, public Core::CachedObject<User *,
 			return &((User *)obj)->m_profiles;
 		}
 		static void dbsrc_AppendProfile(DataSourceLinkedClass *obj, const char *variable_name, DataSourceLinkedClass *child) {
+			printf("Append profile\n");
 			((User *)obj)->m_profiles.add(child);
 		}
 	//private:
@@ -177,7 +178,7 @@ DB::QueryVariableMemberMap User::memberMap[] = {
 	{"password", EDataType_String_ASCII, User::dbsrc_SetPassword, User::dbsrc_GetPassword},
 };
 DB::QueryableClassRelationshipDesc User::relations[] = {
-	{"id", "user_id", DB::ERelationshipType_OneToMany, NULL, NULL, &Profile::classDesc},
+	{"id", "user_id", DB::ERelationshipType_OneToMany, NULL, User::dbsrc_AppendProfile, &Profile::classDesc},
 };
 DB::QueryableClassDesc User::classDesc = {"user", "test", 3, (DB::QueryVariableMemberMap *)&User::memberMap, 1, (DB::QueryableClassRelationshipDesc *)&User::relations, User::userFactory};
 
@@ -221,6 +222,7 @@ int main() {
 		User *user = (User *)*it;
 		printf("User: %d || %s || %s\n", user->id, user->username, user->password);
 		user->password = "123321";
+		printf("\tUser num profiles: %d\n",user->m_profiles.size());
 		user->save();
 		it++;
 	}
@@ -234,7 +236,9 @@ int main() {
 	Core::Iterator<Core::Vector<void *>, void *> it2 = res->begin();
 	while(it2 != res->end()) {
 		Profile *profile = (Profile *)*it2;
+		User *userObj = (User *)profile->userObj;
 		printf("Profile: %d || %s || %d || %p\n",profile->id, profile->username, profile->user_id, profile->userObj);
+		printf("\tProfile user num profiles: %d\n",userObj->m_profiles.size());
 		it2++;
 	}
 	delete db;

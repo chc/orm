@@ -36,6 +36,7 @@ namespace Core {
 			initialize(10);
 		}
 		Map(int num_elements) {
+			printf("Map eles: %d\n",num_elements);
 			initialize(num_elements);
 		}
 		~Map() {

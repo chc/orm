@@ -5,8 +5,8 @@ namespace Core {
 	template<typename T, typename IdentType>
 	class CachedObjectManager {
 	public:
-		CachedObjectManager() {
-
+		CachedObjectManager() : mp_object_list(666) {
+			printf("Cache mgr\n");
 		}
 		/*
 			Request or create object
