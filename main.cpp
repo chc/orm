@@ -39,7 +39,6 @@ class User : public DB::DataSourceLinkedClass, public Core::CachedObject<User *,
 				return Core::CachedObject<User *, int>::mp_cache_mgr->RequestInstance(pk_id);
 			}
 			User *user = new User(src);
-			Core::CachedObject<User *, int>::mp_cache_mgr->InsertInstance(pk_id, user);
 			return (void *)user; 
 		}
 		DB::QueryVariableMemberMap *getMemberMap(int &member_map) {
@@ -92,11 +91,11 @@ Core::CachedObjectManager<Profile *, int> *Core::CachedObject<Profile *, int>::m
 
 class Profile : public DB::DataSourceLinkedClass, public Core::CachedObject<Profile *, int> {
 	public:
-		Profile(DB::DataRow *row) : DB::DataSourceLinkedClass(row) {
+		Profile(DB::DataRow *row) : DB::DataSourceLinkedClass(row), Core::CachedObject<Profile *, int>() {
 			printf("New profile\n");
 			userObj = NULL;
 		}
-		Profile(DB::DataSource *src) : DB::DataSourceLinkedClass(src) {
+		Profile(DB::DataSource *src) : DB::DataSourceLinkedClass(src), Core::CachedObject<Profile *, int>() {
 			printf("New profile\n");
 			userObj = NULL;
 		}
@@ -134,7 +133,6 @@ class Profile : public DB::DataSourceLinkedClass, public Core::CachedObject<Prof
 				return Core::CachedObject<Profile *, int>::mp_cache_mgr->RequestInstance(pk_id);
 			}
 			Profile *profile = new Profile(src);
-			Core::CachedObject<Profile *, int>::mp_cache_mgr->InsertInstance(pk_id, profile);
 			return (void *)profile; 
 		}
 		static sGenericData dbsrc_GetUsername(DataSourceLinkedClass *obj, const char *variable_name) {
@@ -210,6 +208,7 @@ int main() {
 	printf("%p!!!\n", db);
 	db->connect("root", "123321", "localhost", "test");
 	DB::DataQuery *query = db->makeSelectQuery(User::getDesc(), NULL);
+	
 	DB::QueryLimit limit;
 	DB::QueryOrder order;
 	order.sort = DB::EQuerySortMode_Ascending;
@@ -223,21 +222,28 @@ int main() {
 		printf("User: %d || %s || %s\n", user->id, user->username, user->password);
 		user->password = "123321";
 		printf("\tUser num profiles: %d\n",user->m_profiles.size());
+		Core::Iterator<Core::Vector<DB::DataSourceLinkedClass *>, DB::DataSourceLinkedClass *> it2 = user->m_profiles.begin();
+		while(it2 != user->m_profiles.end()) {
+			Profile *p = (Profile *)*it2;
+			printf("Profile: %s || %p\n",p->username, p);
+			it2++;
+		}
 		user->save();
 		it++;
 	}
-	query->remove(where);
+	//query->remove(where);
 	delete where;
+	
 	//profile
 	query = db->makeSelectQuery(Profile::getDesc(), NULL);
-	printf("Profile query: %p\n", query);
-	res = query->select(NULL, &order, &limit);
-	printf("Profile res: %p\n", res);
+	//printf("Profile query: %p\n", query);
+	res = query->select(NULL, NULL, NULL);
+	//printf("Profile res: %p\n", res);
 	Core::Iterator<Core::Vector<void *>, void *> it2 = res->begin();
 	while(it2 != res->end()) {
 		Profile *profile = (Profile *)*it2;
 		User *userObj = (User *)profile->userObj;
-		printf("Profile: %d || %s || %d || %p\n",profile->id, profile->username, profile->user_id, profile->userObj);
+		printf("Profile: %d || %s || %d || %p || %p\n",profile->id, profile->username, profile->user_id, profile->userObj, profile);
 		printf("\tProfile user num profiles: %d\n",userObj->m_profiles.size());
 		it2++;
 	}

@@ -36,7 +36,6 @@ namespace Core {
 			initialize(10);
 		}
 		Map(int num_elements) {
-			printf("Map eles: %d\n",num_elements);
 			initialize(num_elements);
 		}
 		~Map() {
@@ -69,6 +68,7 @@ namespace Core {
 				return item->value;
 			}
 			item = findFirstFreeItem();
+			item->key = idx;
 			item->initalized = true;
 			return item->value;
 		}

@@ -51,7 +51,7 @@ namespace DB {
 			}	
 		}
 		strcpy(msg, buff);
-		printf("rel query: %s\n", buff);
+		//printf("rel query: %s\n", buff);
 	}
 	DataResultSet* MySQLDataQuery::select(QuerySearchParams *search_params, QueryOrder *query_order, QueryLimit *limit, bool with_relations) {
 		char query[MYSQL_QUERY_BUFF_SIZE];
@@ -86,7 +86,7 @@ namespace DB {
 			strcat(query, limit_stmt);
 
 
-		printf("Query: %s\n", query);
+		//printf("Query: %s\n", query);
 
 		mysql_query(mp_data_src->getMySQLConn(), query);
 		MYSQL_RES *res = mysql_store_result(mp_data_src->getMySQLConn());
@@ -132,7 +132,7 @@ namespace DB {
 			related_pk = getPrimaryKey(target_desc, &related_row_pk_index);
 			if(related_row_pk_index != -1) {
 				related_row_pk = atoi(row[field_offset + related_row_pk_index]);
-				printf("Related row pk: %d\n", related_row_pk);
+				//printf("Related row pk: %d\n", related_row_pk);
 			}
 			void *related_object = target_desc->mpFactoryMethod(mp_data_src,related_row_pk);
 			for(int j=0;j<target_desc->num_members;j++) {
@@ -173,9 +173,9 @@ namespace DB {
 			void *insert_obj = *it;
 			if(insert_obj) {
 				//void (*mpListAppendMethod)(DataSourceLinkedClass *obj, const char *variable_name, DataSourceLinkedClass *child);
-				printf("Calling append: %p\n", mp_class_desc->relations[i].mpListAppendMethod);
+				//printf("Calling append: %p\n", mp_class_desc->relations[i].mpListAppendMethod);
 				mp_class_desc->relations[i].mpListAppendMethod((DB::DataSourceLinkedClass*)obj, NULL, (DataSourceLinkedClass *)insert_obj);
-				printf("Append called\n");
+				//printf("Append called\n");
 			}
 
 			delete where;
@@ -198,9 +198,9 @@ namespace DB {
 
 
 			//sGenericData (*mpGetMethod)(DataSourceLinkedClass *obj, const char *variable_name);
-			printf("Source value: %d\n",source_column->mpGetMethod((DataSourceLinkedClass *)obj, source_column->variable_name).sUnion.uInt32Data);
+			//printf("Source value: %d\n",source_column->mpGetMethod((DataSourceLinkedClass *)obj, source_column->variable_name).sUnion.uInt32Data);
 
-			printf("Load members: %s || %s || %p || %p\n",mp_class_desc->relations[i].source_column, mp_class_desc->relations[i].target_column, source_column, target_column);
+			//printf("Load members: %s || %s || %p || %p\n",mp_class_desc->relations[i].source_column, mp_class_desc->relations[i].target_column, source_column, target_column);
 		}
 		return obj;
 	}
@@ -331,7 +331,7 @@ namespace DB {
 ///// MySQL Data Source implementation
 	MySQLDataSource::MySQLDataSource() {
 		conn = mysql_init(NULL);
-		printf("SQL PTR: %p\n", conn);
+		//printf("SQL PTR: %p\n", conn);
 	}
 	MySQLDataSource::~MySQLDataSource() {
 		mysql_close(conn);
@@ -376,7 +376,7 @@ namespace DB {
     	MySQLDataSource::getMySQLPrintFmt(obj, pk, temp_vardata, sizeof(temp_vardata));
 		snprintf(temp, sizeof(temp), " where `%s` = %s\n", pk->variable_name, temp_vardata);
 		strcat(query, temp);
-		printf("Output query: %s\n", query);
+		//printf("Output query: %s\n", query);
 	}
 	DB::DataRow *MySQLDataSource::repullObj(DB::DataSourceLinkedClass *obj) {
 
