@@ -17,6 +17,7 @@ namespace DB {
 			DB::DataRow *repullObj(DB::DataSourceLinkedClass *obj);
 		  static void getMySQLPrintFmt(DB::DataSourceLinkedClass *obj, DB::QueryVariableMemberMap *map, char *out, int size);
  		  static void getMySQLPrintFmt(sGenericData *data, char *out, int size);
+ 		  static void getMySQLVariableFmt(sGenericData *data, char *out, int size);
 		private:
 			MYSQL *conn;
 	};

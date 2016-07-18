@@ -115,11 +115,20 @@ namespace DB {
 		EQuerySortMode sort;
 		QueryVariableMemberMap *column;
 	} QueryOrder;
+
+	typedef struct {
+		DB::QueryVariableMemberMap *mp_variable;
+		QueryableClassDesc *mp_context;
+		bool one_to_many;
+	} ClassColumn;
 	
 
 	QueryVariableMemberMap *getPrimaryKey(QueryableClassDesc *class_desc, int *output_index = NULL);
 
 	DB::QueryVariableMemberMap *getMemberByName(QueryableClassDesc *class_desc, const char *name, int *output_index = NULL);
+
+	int getVariableMapOffset(QueryableClassDesc *class_desc, DB::QueryVariableMemberMap *memberMap);
+	int getTableOffset(QueryableClassDesc *class_desc, DB::QueryVariableMemberMap *memberMap, bool one_to_many = false);
 
 	typedef struct {
 		int offset;

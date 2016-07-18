@@ -51,7 +51,7 @@ namespace DB {
 			}	
 		}
 		strcpy(msg, buff);
-		//printf("rel query: %s\n", buff);
+		printf("rel query: %s\n", buff);
 	}
 	DataResultSet* MySQLDataQuery::select(QuerySearchParams *search_params, QueryOrder *query_order, QueryLimit *limit, bool with_relations) {
 		char query[MYSQL_QUERY_BUFF_SIZE];
@@ -86,7 +86,7 @@ namespace DB {
 			strcat(query, limit_stmt);
 
 
-		//printf("Query: %s\n", query);
+		printf("Query: %s\n", query);
 
 		mysql_query(mp_data_src->getMySQLConn(), query);
 		MYSQL_RES *res = mysql_store_result(mp_data_src->getMySQLConn());
@@ -156,8 +156,13 @@ namespace DB {
 
 			pk_data = source_column->mpGetMethod((DataSourceLinkedClass *)obj, source_column->variable_name);
 
+			DB::ClassColumn related_column;
+			related_column.mp_context = mp_class_desc->relations[i].target_class_desc;
+			related_column.mp_variable = DB::getMemberByName(mp_class_desc->relations[i].target_class_desc, mp_class_desc->relations[i].target_column);
+			related_column.one_to_many = true;
+
 			column_data.type = EDataType_VariableName;
-			column_data.sUnion.mString = mp_class_desc->relations[i].target_column;
+			column_data.sUnion.pVoidPtr = (void *)&related_column;
 
 
 			DB::QuerySearchParams *where = new DB::QuerySearchParams();
@@ -180,27 +185,7 @@ namespace DB {
 
 			delete where;
 			delete query;
-
-			//MySQLDataQuery *mp_rel_query = new MySQLDataQuery(mp_data_src, target);
-
-			/*
-				sGenericData *d1 = (sGenericData *)malloc(sizeof(sGenericData)), *d2 = (sGenericData *)malloc(sizeof(sGenericData));
-	//user query tester
-	where->pushOperator(DB::EQueryOperator_Less);
-	//where->pushOperator(DB::EQueryOperator_And);
-	d1->type = EDataType_UInt32;
-	d2->type = EDataType_VariableName;
-	d1->sUnion.uInt32Data = 10;
-	d2->sUnion.mString = "id"; //getFullColumnFromVariable(Profile::getDesc(), User::memberMap[0]) << for when profile is primary table and selecting user id
-	where->pushData(d2);
-	where->pushData(d1);
-			*/
-
-
-			//sGenericData (*mpGetMethod)(DataSourceLinkedClass *obj, const char *variable_name);
-			//printf("Source value: %d\n",source_column->mpGetMethod((DataSourceLinkedClass *)obj, source_column->variable_name).sUnion.uInt32Data);
-
-			//printf("Load members: %s || %s || %p || %p\n",mp_class_desc->relations[i].source_column, mp_class_desc->relations[i].target_column, source_column, target_column);
+			delete res;
 		}
 		return obj;
 	}
@@ -233,6 +218,9 @@ namespace DB {
 	}
 
 	void MySQLDataQuery::create_where_statement(QuerySearchParams *search_params, char *out, int len) {
+
+		//TODO: PDO bindings
+		
 		char where[1024];
 		char temp[128];
 		where[0] = 0;
@@ -387,6 +375,14 @@ namespace DB {
 		getMySQLPrintFmt((sGenericData *)&data, msg, len);
 
 	}
+	void MySQLDataSource::getMySQLVariableFmt(sGenericData *data, char *out, int size) {
+		ClassColumn *col = (ClassColumn *)data->sUnion.pVoidPtr;
+		int tbl_idx = getTableOffset(col->mp_context, col->mp_variable, col->one_to_many);
+
+		snprintf(out, size, "`mt%d`.`%s`",tbl_idx, col->mp_variable->variable_name);
+
+		printf("Tbl idx: %d (%s)\n",tbl_idx, out);
+	}
 	void MySQLDataSource::getMySQLPrintFmt(sGenericData *data, char *out, int size) {
 		char vardata[256];
 		char identifier = 0;
@@ -395,7 +391,9 @@ namespace DB {
 			identifier = '\"';
 			break;
 			case EDataType_VariableName:
-			identifier = '`';
+			//identifier = '`';
+			getMySQLVariableFmt(data,out,size);
+			return;
 			break;
 		}
 		getGenericAsString(data, (char *)&vardata, sizeof(vardata));	

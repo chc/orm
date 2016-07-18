@@ -58,5 +58,32 @@ namespace DB {
 		}
 		return NULL;
 	}
+	int getTableOffset(QueryableClassDesc *class_desc, DB::QueryVariableMemberMap *memberMap, bool one_to_many) {
+		int num_members;
+		QueryVariableMemberMap *variable_map;
 
+		for(int i=0;i<class_desc->num_members;i++) {
+			if(memberMap == (DB::QueryVariableMemberMap *)&class_desc->variable_map[i]) {
+				return 0; //source table
+			}
+		}
+		for(int i=0;i<class_desc->num_relations;i++) {
+			QueryableClassDesc *desc = class_desc->relations[i].target_class_desc;
+			if(!one_to_many && class_desc->relations[i].relation_type != ERelationshipType_OneToOne)  {
+				continue;
+			}
+			if(one_to_many && class_desc->relations[i].relation_type != ERelationshipType_OneToMany) {
+				continue;
+			}
+			for(int j=0;j<desc->num_members;j++) {
+				if(((DB::QueryVariableMemberMap *)&desc->variable_map[j]) == memberMap) {
+					return i+1;
+				}
+			}
+		}
+		return -1;
+	}
+	int getVariableMapOffset(QueryableClassDesc *class_desc, DB::QueryVariableMemberMap *memberMap) {
+		return -1;
+	}
 }

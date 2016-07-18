@@ -201,7 +201,13 @@ int main() {
 	d1->type = EDataType_UInt32;
 	d2->type = EDataType_VariableName;
 	d1->sUnion.uInt32Data = 10;
-	d2->sUnion.mString = "id"; //getFullColumnFromVariable(Profile::getDesc(), User::memberMap[0]) << for when profile is primary table and selecting user id
+	
+	DB::ClassColumn profile_user_id;
+	profile_user_id.mp_variable = (DB::QueryVariableMemberMap *)&User::memberMap[0];
+	profile_user_id.mp_context = User::getDesc();
+	profile_user_id.one_to_many = false;
+
+	d2->sUnion.pVoidPtr = (void *)&profile_user_id;
 	where->pushData(d2);
 	where->pushData(d1);
 	DB::MySQLDataSource *db = new DB::MySQLDataSource();
@@ -216,6 +222,7 @@ int main() {
 	limit.offset = 0;
 	limit.row_count = 15;
 	DB::DataResultSet *res = query->select(where, &order, &limit);
+	return 0;
 	Core::Iterator<Core::Vector<void *>, void *> it = res->begin();
 	while(it != res->end()) {
 		User *user = (User *)*it;
